@@ -22,29 +22,28 @@ Variables:
 
 """
 
-import warnings
-
 import io
 import textwrap
 import time
+import warnings
+from collections import UserList
+from urllib.parse import urlencode
+from urllib.request import build_opener
+from urllib.request import HTTPBasicAuthHandler
+from urllib.request import HTTPPasswordMgrWithDefaultRealm
+from urllib.request import install_opener
+from urllib.request import Request
+from urllib.request import urlopen
+from xml.parsers import expat
 
 import numpy as np
 
-from collections import UserList
-from urllib.parse import urlencode
-from urllib.request import build_opener, install_opener
-from urllib.request import urlopen
-from urllib.request import HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler
-from urllib.request import Request
-from xml.parsers import expat
-
-
 from Bio import BiopythonWarning
 from Bio import StreamModeError
-from Bio.Align import Alignment, Alignments
-from Bio.Blast import _writers
 from Bio._utils import function_with_previous
-
+from Bio.Align import Alignment
+from Bio.Align import Alignments
+from Bio.Blast import _writers
 
 email = None
 tool = "biopython"
@@ -103,7 +102,7 @@ class HSP(Alignment):
                      - 'identity':  number of identities in HSP (integer);
                      - 'positive':  number of positives in HSP (integer);
                      - 'gaps':      number of gaps in HSP (integer);
-                     - 'midline':   formating middle line.
+                     - 'midline':   formatting middle line.
 
     A ``Bio.Blast.HSP`` object behaves the same as a `Bio.Align.Alignment``
     object and can be used as such. However, when printing a ``Bio.Blast.HSP``
@@ -377,7 +376,7 @@ class Record(list):
                      - 'identity':  number of identities in HSP (integer);
                      - 'positive':  number of positives in HSP (integer);
                      - 'gaps':      number of gaps in HSP (integer);
-                     - 'midline':   formating middle line.
+                     - 'midline':   formatting middle line.
 
     >>> from Bio import Blast
     >>> record = Blast.read("Blast/xml_2212L_blastx_001.xml")
@@ -730,12 +729,21 @@ class Records(UserList):
                     except AttributeError:
                         break
                     else:
-                        raise ValueError(
-                            f"premature end of XML file (after reading {parser.CurrentByteIndex} bytes)"
-                        )
+                        try:
+                            parser.Parse(b"", True)
+                        except expat.ExpatError as e:
+                            if parser.StartElementHandler is not None:
+                                raise ValueError(
+                                    f"premature end of XML file: line {e.lineno}, column {e.offset}"
+                                )
+                            raise e
                 try:
                     parser.Parse(data, False)
                 except expat.ExpatError as e:
+                    try:
+                        parser.Parse(b"", True)
+                    except expat.ExpatError:
+                        pass
                     if parser.StartElementHandler:
                         # We saw the initial <!xml declaration, so we can be
                         # sure that we are parsing XML data. Most likely, the
@@ -762,6 +770,17 @@ class Records(UserList):
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
+        try:
+            self._parser.Parse(b"", True)
+            del self._parser
+        except (AttributeError, expat.ExpatError):
+            pass
+
+        try:
+            del self._cache
+        except AttributeError:
+            pass
+
         try:
             stream = self._stream
         except AttributeError:
@@ -798,12 +817,18 @@ class Records(UserList):
             # Read in another block of data from the file.
             data = stream.read(BLOCK)
             if data == b"":
-                del self._cache
-                del self._parser
-                if parser.StartElementHandler is not None:
-                    raise ValueError(
-                        f"premature end of XML file (after reading {parser.CurrentByteIndex} bytes)"
-                    )
+                try:
+                    del self._parser
+                    try:
+                        parser.Parse(b"", True)
+                    except expat.ExpatError as e:
+                        if parser.StartElementHandler is not None:
+                            raise ValueError(
+                                f"premature end of XML file: line {e.lineno}, column {e.offset}"
+                            )
+                        raise e
+                except AttributeError:
+                    pass
                 raise StopIteration
             try:
                 parser.Parse(data, False)
@@ -906,14 +931,14 @@ def read(source):
     "rb" when opening the file, as in
 
     >>> from Bio import Blast
-    >>> stream = open("Blast/xml_2900_blastn_001.xml", "rb")  # opened in binary mode
+    >>> stream = open("Blast/xml_21500_blastn_001.xml", "rb")  # opened in binary mode
     >>> record = Blast.read(stream)
     >>> record.query.id
-    'G26684.1'
+    'Query_78041'
     >>> record.query.description
-    'human STS STS_D11570, sequence tagged site'
+    'G26684.1 human STS STS_D11570, sequence tagged site'
     >>> len(record)
-    10
+    11
     >>> stream.close()
 
     Use the Bio.Blast.parse function if you want to read a file containing
@@ -952,12 +977,17 @@ def write(records, destination, fmt="XML"):
                      written.
      - fmt         - string describing the file format to write
                      (case-insensitive).
-                     Currently, only "XML" is accepted.
+                     Currently, only "XML" and "XML2" are accepted.
 
     Returns the number of records written (as an integer).
     """
-    if fmt.upper() == "XML":
+    fmt = fmt.upper()
+    if fmt == "XML":
         Writer = _writers.XMLWriter
+    elif fmt == "XML2":
+        Writer = _writers.XML2Writer
+    else:
+        raise ValueError(f"Unknown format {fmt}; expected 'XML' or 'XML2'")
     try:
         stream = open(destination, "wb")
     except TypeError:  # not a path, assume we received a stream
@@ -1031,21 +1061,15 @@ def qblast(
     username="blast",
     password=None,
 ):
-    """BLAST search using NCBI's QBLAST server or a cloud service provider.
+    """BLAST search using NCBI's QBLAST server.
 
     Supports all parameters of the old qblast API for Put and Get.
 
-    Please note that NCBI uses the new Common URL API for BLAST searches
-    on the internet (http://ncbi.github.io/blast-cloud/dev/api.html). Thus,
-    some of the parameters used by this function are not (or are no longer)
-    officially supported by NCBI. Although they are still functioning, this
-    may change in the future.
-
-    The Common URL API (http://ncbi.github.io/blast-cloud/dev/api.html) allows
-    doing BLAST searches on cloud servers. To use this feature, please set
-    ``url_base='http://host.my.cloud.service.provider.com/cgi-bin/blast.cgi'``
-    and ``format_object='Alignment'``. For more details, please see
-    https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=CloudBlast
+    Please note that NCBI uses the new Common URL API for BLAST searches on
+    the internet (https://blast.ncbi.nlm.nih.gov/doc/blast-help/urlapi.html).
+    Thus, some of the parameters used by this function are not (or are no
+    longer) officially supported by NCBI. Although they are still functioning,
+    this may change in the future.
 
     Some useful parameters:
 
@@ -1060,7 +1084,7 @@ def qblast(
      - filter         "none" turns off filtering.  Default no filtering
      - format_type    "XML" (default), "HTML", "Text", "XML2", "JSON2",
                       or "Tabular".
-     - entrez_query   Entrez query to limit Blast search
+     - entrez_query   Entrez query to limit Blast search - only applies when searching nucleotide BLASTDBs
      - hitlist_size   Number of hits to return. Default 50
      - megablast      TRUE/FALSE whether to use MEga BLAST algorithm (blastn only)
      - short_query    TRUE/FALSE whether to adjust the search parameters for a
@@ -1071,7 +1095,11 @@ def qblast(
 
     This function does no checking of the validity of the parameters
     and passes the values to the server as is.  More help is available at:
-    https://ncbi.github.io/blast-cloud/dev/api.html
+    https://blast.ncbi.nlm.nih.gov/doc/blast-help/urlapi.html
+
+    The http.client.HTTPResponse object returned by this function has the
+    additional attributes rid and rtoe with the Request ID and Request Time Of
+    Execution for this BLAST search.
 
     """
     programs = ["blastn", "blastp", "blastx", "tblastn", "tblastx"]
@@ -1236,6 +1264,8 @@ def qblast(
         assert data.startswith(b"<p><!--\nQBlastInfoBegin")
     elif format_type in ("XML2", "JSON2"):
         assert data.startswith(b"PK\x03\x04")  # zipped file
+    stream.rid = rid
+    stream.rtoe = rtoe
     return stream
 
 

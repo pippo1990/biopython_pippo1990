@@ -90,10 +90,7 @@ which are basically analogous to the different parameters you can set on
 the BLAST web page. We’ll just highlight a few of them here:
 
 -  The argument ``url_base`` sets the base URL for running BLAST over
-   the internet. By default it connects to the NCBI, but one can use
-   this to connect to an instance of NCBI BLAST running in the cloud.
-   Please refer to the documentation for the ``qblast`` function for
-   further details.
+   the internet. By default it connects to the NCBI.
 
 -  The ``qblast`` function can return the BLAST results in various
    formats, which you can choose with the optional ``format_type``
@@ -435,9 +432,11 @@ These parsers have now been removed from Biopython, as the BLAST output in
 these formats kept changing, each time breaking the Biopython parsers.
 Nowadays, Biopython can parse BLAST output in the XML format, the XML2 format,
 and tabular format. This chapter describes the parser for BLAST output in the
-XML format; parsing XML2 output is done in exactly the same way as parsing XML.
-BLAST output in tabular format can be parsed as alignments (see the section
-:ref:`subsec:align_tabular`).
+XML and XML2 formats using the ``Bio.Blast.parse`` function. This function
+automatically detects if the XML file is in the XML format or in the XML2
+format.
+BLAST output in tabular format can be parsed as alignments using the
+``Bio.Align.parse`` function (see the section :ref:`subsec:align_tabular`).
 
 You can get BLAST output in XML format in various ways. For the parser,
 it doesn’t matter how the output was generated, as long as it is in the
@@ -767,7 +766,7 @@ For our example, we find:
    'refseq_rna'
    >>> blast_records.param
    {'expect': 10.0, 'sc-match': 2, 'sc-mismatch': -3, 'gap-open': 5, 'gap-extend': 2, 'filter': 'L;m;'}
-   >>> print(blast_records)  # doctest:+ELLIPSIS
+   >>> print(blast_records)
    Program: BLASTN 2.2.27+
         db: refseq_rna
    <BLANKLINE>
@@ -834,7 +833,7 @@ Continuing with our example,
    SeqRecord(seq=Seq(None, length=61), id='42291', name='<unknown name>', description='mystery_seq', dbxrefs=[])
    >>> blast_record.stat
    {'db-num': 3056429, 'db-len': 673143725, 'hsp-len': 0, 'eff-space': 0, 'kappa': 0.41, 'lambda': 0.625, 'entropy': 0.78}
-   >>> print(blast_record)  # doctest:+ELLIPSIS
+   >>> print(blast_record)
      Query: 42291 (length=61)
             mystery_seq
       Hits: ----  -----  ----------------------------------------------------------
@@ -854,7 +853,7 @@ such. For example, you can iterate over the record:
 
 .. code:: pycon
 
-   >>> for hit in blast_record:  # doctest:+ELLIPSIS
+   >>> for hit in blast_record:
    ...     hit
    ...
    <Bio.Blast.Hit target.id='gi|262205317|ref|NR_030195.1|' query.id='42291'; 1 HSP>
@@ -948,7 +947,7 @@ You can get the full list of keys by using ``.keys()`` as usual:
 
 .. code:: pycon
 
-   >>> blast_record.keys()  # doctest:+ELLIPSIS
+   >>> blast_record.keys()
    ['gi|262205317|ref|NR_030195.1|', 'gi|301171311|ref|NR_035856.1|', 'gi|270133242|ref|NR_032573.1|', ...]
 
 What if you just want to check whether a particular hit is present in the query
@@ -1148,9 +1147,9 @@ alignment.
    SeqRecord(seq=Seq('CCCTCTACAGGGAAGCGCTTTCTGTTGTCTGAAAGAAAAGAAAGTGCTTCCTTT...GGG'), id='gi|262205317|ref|NR_030195.1|', name='NR_030195', description='Homo sapiens microRNA 520b (MIR520B), microRNA', dbxrefs=[])
    >>> alignment.query
    SeqRecord(seq=Seq('CCCTCTACAGGGAAGCGCTTTCTGTTGTCTGAAAGAAAAGAAAGTGCTTCCTTT...GGG'), id='42291', name='<unknown name>', description='mystery_seq', dbxrefs=[])
-   >>> alignment.coordinates
-   array([[ 0, 61],
-          [ 0, 61]])
+   >>> print(alignment.coordinates)
+   [[ 0 61]
+    [ 0 61]]
 
 For translated BLAST searches, the ``features`` attribute of the target or
 query may contain a ``SeqFeature`` of type CDS that stores the amino acid
@@ -1211,7 +1210,7 @@ greater than a particular threshold:
 .. code:: pycon
 
    >>> E_VALUE_THRESH = 0.04
-   >>> for alignments in blast_record:  # doctest:+ELLIPSIS
+   >>> for alignments in blast_record:
    ...     for alignment in alignments:
    ...         if alignment.annotations["evalue"] < E_VALUE_THRESH:
    ...             print("****Alignment****")
@@ -1389,7 +1388,9 @@ Writing BLAST records
 ---------------------
 
 Use the ``write`` function in ``Bio.Blast`` to save BLAST records as an XML
-file:
+file. By default, the (DTD-based) XML format is used; you can also save the
+BLAST records in the (schema-based) XML2 format by using the ``fmt="XML2"``
+argument to the ``write`` function.
 
 .. code:: pycon
 
@@ -1397,6 +1398,13 @@ file:
    >>> stream = Blast.qblast("blastn", "nt", "8332116")
    >>> records = Blast.parse(stream)
    >>> Blast.write(records, "my_qblast_output.xml")
+
+   or
+
+.. code:: pycon
+
+   >>> Blast.write(records, "my_qblast_output.xml", fmt="XML2")
+
 
 In this example, we could have saved the data returned by ``Blast.qblast``
 directly to an XML file (see section :ref:`subsec:saving-blast-results`).
@@ -1533,10 +1541,7 @@ which are basically analogous to the different parameters you can set on
 the BLAST web page. We’ll just highlight a few of them here:
 
 -  The argument ``url_base`` sets the base URL for running BLAST over
-   the internet. By default it connects to the NCBI, but one can use
-   this to connect to an instance of NCBI BLAST running in the cloud.
-   Please refer to the documentation for the ``qblast`` function for
-   further details.
+   the internet. By default it connects to the NCBI.
 
 -  The ``qblast`` function can return the BLAST results in various
    formats, which you can choose with the optional ``format_type``

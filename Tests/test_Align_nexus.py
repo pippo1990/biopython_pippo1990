@@ -6,9 +6,9 @@
 """Tests for Bio.Align.nexus module."""
 import unittest
 from io import StringIO
+from tempfile import NamedTemporaryFile
 
 from Bio import Align
-
 
 try:
     import numpy as np
@@ -60,6 +60,13 @@ class TestNexusReading(unittest.TestCase):
         with self.assertRaises(AttributeError):
             alignments._stream
         self.check_reading_writing(path)
+        with open(path) as stream:
+            data = stream.read()
+        stream = NamedTemporaryFile("w+t")
+        stream.write(data)
+        stream.seek(0)
+        alignments = Align.parse(stream, "nexus")
+        self.check_nexus1(alignments)
 
     def check_nexus1(self, alignments):
         alignment = next(alignments)
@@ -233,6 +240,22 @@ np.array([['A', '-', 'C', '-', 'G', '-', 'T', 'c', 'g', 't', 'g', 't', 'g',
                 # fmt: on
             )
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.left_insertions, 0)
+        self.assertEqual(counts.left_deletions, 0)
+        self.assertEqual(counts.right_insertions, 186)
+        self.assertEqual(counts.right_deletions, 83)
+        self.assertEqual(counts.internal_insertions, 254)
+        self.assertEqual(counts.internal_deletions, 73)
+        self.assertEqual(counts.left_gaps, 0)
+        self.assertEqual(counts.right_gaps, 269)
+        self.assertEqual(counts.internal_gaps, 327)
+        self.assertEqual(counts.insertions, 440)
+        self.assertEqual(counts.deletions, 156)
+        self.assertEqual(counts.gaps, 596)
+        self.assertEqual(counts.aligned, 862)
+        self.assertEqual(counts.identities, 256)
+        self.assertEqual(counts.mismatches, 606)
         with self.assertRaises(StopIteration):
             next(alignments)
 
@@ -286,6 +309,22 @@ np.array([['A', 'A', 'A', 'A', 'A', 'G', 'G', 'C', 'A', 'T', 'T', 'G', 'T',
                 # fmt: on
             )
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.left_insertions, 0)
+        self.assertEqual(counts.left_deletions, 0)
+        self.assertEqual(counts.right_insertions, 0)
+        self.assertEqual(counts.right_deletions, 0)
+        self.assertEqual(counts.internal_insertions, 0)
+        self.assertEqual(counts.internal_deletions, 0)
+        self.assertEqual(counts.left_gaps, 0)
+        self.assertEqual(counts.right_gaps, 0)
+        self.assertEqual(counts.internal_gaps, 0)
+        self.assertEqual(counts.insertions, 0)
+        self.assertEqual(counts.deletions, 0)
+        self.assertEqual(counts.gaps, 0)
+        self.assertEqual(counts.aligned, 22)
+        self.assertEqual(counts.identities, 13)
+        self.assertEqual(counts.mismatches, 9)
         with self.assertRaises(StopIteration):
             next(alignments)
         self.check_reading_writing(path)

@@ -7,6 +7,7 @@
 
 import array
 import os
+import sys
 import unittest
 
 try:
@@ -18,8 +19,12 @@ except ImportError:
         "Install numpy if you want to use Bio.Align."
     ) from None
 
-from Bio import Align, SeqIO
-from Bio.Seq import Seq, reverse_complement
+from Bio import BiopythonDeprecationWarning
+from Bio import BiopythonWarning
+from Bio import Align
+from Bio import SeqIO
+from Bio.Seq import reverse_complement
+from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
 
@@ -30,7 +35,7 @@ class TestAlignerProperties(unittest.TestCase):
         aligner.epsilon = 1.0e-4
         self.assertAlmostEqual(aligner.epsilon, 1.0e-4)
         aligner.epsilon = 1.0e-8
-        self.assertAlmostEqual(aligner.epsilon, 1.0e-8)
+        self.assertAlmostEqual(aligner.epsilon, 1.0e-8, places=8)
         with self.assertRaises(TypeError):
             aligner.epsilon = "not a number"
         with self.assertRaises(TypeError):
@@ -62,18 +67,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 3.000000
   mismatch_score: -2.000000
-  target_internal_open_gap_score: 0.000000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: 0.000000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: 0.000000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: 0.000000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: 0.000000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: 0.000000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: 0.000000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: 0.000000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: 0.000000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: 0.000000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: 0.000000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: 0.000000
+  extend_right_deletion_score: 0.000000
   mode: global
 """,
         )
@@ -81,23 +86,23 @@ Pairwise sequence aligner with parameters
     def test_aligner_property_gapscores(self):
         aligner = Align.PairwiseAligner()
         open_score, extend_score = (-5, -1)
-        aligner.target_open_gap_score = open_score
-        aligner.target_extend_gap_score = extend_score
-        self.assertAlmostEqual(aligner.target_open_gap_score, open_score)
-        self.assertAlmostEqual(aligner.target_extend_gap_score, extend_score)
+        aligner.open_insertion_score = open_score
+        aligner.extend_insertion_score = extend_score
+        self.assertAlmostEqual(aligner.open_insertion_score, open_score)
+        self.assertAlmostEqual(aligner.extend_insertion_score, extend_score)
         open_score, extend_score = (-6, -7)
-        aligner.query_open_gap_score = open_score
-        aligner.query_extend_gap_score = extend_score
-        self.assertAlmostEqual(aligner.query_open_gap_score, open_score)
-        self.assertAlmostEqual(aligner.query_extend_gap_score, extend_score)
+        aligner.open_deletion_score = open_score
+        aligner.extend_deletion_score = extend_score
+        self.assertAlmostEqual(aligner.open_deletion_score, open_score)
+        self.assertAlmostEqual(aligner.extend_deletion_score, extend_score)
         open_score, extend_score = (-3, -9)
-        aligner.target_end_open_gap_score = open_score
-        aligner.target_end_extend_gap_score = extend_score
-        self.assertAlmostEqual(aligner.target_end_open_gap_score, open_score)
-        self.assertAlmostEqual(aligner.target_end_extend_gap_score, extend_score)
+        aligner.open_end_insertion_score = open_score
+        aligner.extend_end_insertion_score = extend_score
+        self.assertAlmostEqual(aligner.open_end_insertion_score, open_score)
+        self.assertAlmostEqual(aligner.extend_end_insertion_score, extend_score)
         open_score, extend_score = (-1, -2)
-        aligner.query_end_open_gap_score = open_score
-        aligner.query_end_extend_gap_score = extend_score
+        aligner.open_end_deletion_score = open_score
+        aligner.extend_end_deletion_score = extend_score
         self.assertEqual(
             str(aligner),
             """\
@@ -105,55 +110,55 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -5.000000
-  target_internal_extend_gap_score: -1.000000
-  target_left_open_gap_score: -3.000000
-  target_left_extend_gap_score: -9.000000
-  target_right_open_gap_score: -3.000000
-  target_right_extend_gap_score: -9.000000
-  query_internal_open_gap_score: -6.000000
-  query_internal_extend_gap_score: -7.000000
-  query_left_open_gap_score: -1.000000
-  query_left_extend_gap_score: -2.000000
-  query_right_open_gap_score: -1.000000
-  query_right_extend_gap_score: -2.000000
+  open_internal_insertion_score: -5.000000
+  extend_internal_insertion_score: -1.000000
+  open_left_insertion_score: -3.000000
+  extend_left_insertion_score: -9.000000
+  open_right_insertion_score: -3.000000
+  extend_right_insertion_score: -9.000000
+  open_internal_deletion_score: -6.000000
+  extend_internal_deletion_score: -7.000000
+  open_left_deletion_score: -1.000000
+  extend_left_deletion_score: -2.000000
+  open_right_deletion_score: -1.000000
+  extend_right_deletion_score: -2.000000
   mode: global
 """,
         )
-        self.assertAlmostEqual(aligner.query_end_open_gap_score, open_score)
-        self.assertAlmostEqual(aligner.query_end_extend_gap_score, extend_score)
+        self.assertAlmostEqual(aligner.open_end_deletion_score, open_score)
+        self.assertAlmostEqual(aligner.extend_end_deletion_score, extend_score)
         score = -3
-        aligner.target_gap_score = score
-        self.assertAlmostEqual(aligner.target_gap_score, score)
-        self.assertAlmostEqual(aligner.target_open_gap_score, score)
-        self.assertAlmostEqual(aligner.target_extend_gap_score, score)
+        aligner.insertion_score = score
+        self.assertAlmostEqual(aligner.insertion_score, score)
+        self.assertAlmostEqual(aligner.open_insertion_score, score)
+        self.assertAlmostEqual(aligner.extend_insertion_score, score)
         score = -2
-        aligner.query_gap_score = score
-        self.assertAlmostEqual(aligner.query_gap_score, score)
-        self.assertAlmostEqual(aligner.query_open_gap_score, score)
-        self.assertAlmostEqual(aligner.query_extend_gap_score, score)
+        aligner.deletion_score = score
+        self.assertAlmostEqual(aligner.deletion_score, score)
+        self.assertAlmostEqual(aligner.open_deletion_score, score)
+        self.assertAlmostEqual(aligner.extend_deletion_score, score)
         score = -4
-        aligner.target_end_gap_score = score
-        self.assertAlmostEqual(aligner.target_end_gap_score, score)
-        self.assertAlmostEqual(aligner.target_end_open_gap_score, score)
-        self.assertAlmostEqual(aligner.target_end_extend_gap_score, score)
-        self.assertAlmostEqual(aligner.target_left_gap_score, score)
-        self.assertAlmostEqual(aligner.target_left_open_gap_score, score)
-        self.assertAlmostEqual(aligner.target_left_extend_gap_score, score)
-        self.assertAlmostEqual(aligner.target_right_gap_score, score)
-        self.assertAlmostEqual(aligner.target_right_open_gap_score, score)
-        self.assertAlmostEqual(aligner.target_right_extend_gap_score, score)
+        aligner.end_insertion_score = score
+        self.assertAlmostEqual(aligner.end_insertion_score, score)
+        self.assertAlmostEqual(aligner.open_end_insertion_score, score)
+        self.assertAlmostEqual(aligner.extend_end_insertion_score, score)
+        self.assertAlmostEqual(aligner.left_insertion_score, score)
+        self.assertAlmostEqual(aligner.open_left_insertion_score, score)
+        self.assertAlmostEqual(aligner.extend_left_insertion_score, score)
+        self.assertAlmostEqual(aligner.right_insertion_score, score)
+        self.assertAlmostEqual(aligner.open_right_insertion_score, score)
+        self.assertAlmostEqual(aligner.extend_right_insertion_score, score)
         score = -5
-        aligner.query_end_gap_score = score
-        self.assertAlmostEqual(aligner.query_end_gap_score, score)
-        self.assertAlmostEqual(aligner.query_end_open_gap_score, score)
-        self.assertAlmostEqual(aligner.query_end_extend_gap_score, score)
-        self.assertAlmostEqual(aligner.query_left_gap_score, score)
-        self.assertAlmostEqual(aligner.query_left_open_gap_score, score)
-        self.assertAlmostEqual(aligner.query_left_extend_gap_score, score)
-        self.assertAlmostEqual(aligner.query_right_gap_score, score)
-        self.assertAlmostEqual(aligner.query_right_open_gap_score, score)
-        self.assertAlmostEqual(aligner.query_right_extend_gap_score, score)
+        aligner.end_deletion_score = score
+        self.assertAlmostEqual(aligner.end_deletion_score, score)
+        self.assertAlmostEqual(aligner.open_end_deletion_score, score)
+        self.assertAlmostEqual(aligner.extend_end_deletion_score, score)
+        self.assertAlmostEqual(aligner.left_deletion_score, score)
+        self.assertAlmostEqual(aligner.open_left_deletion_score, score)
+        self.assertAlmostEqual(aligner.extend_left_deletion_score, score)
+        self.assertAlmostEqual(aligner.right_deletion_score, score)
+        self.assertAlmostEqual(aligner.open_right_deletion_score, score)
+        self.assertAlmostEqual(aligner.extend_right_deletion_score, score)
         self.assertEqual(
             str(aligner),
             """\
@@ -161,29 +166,671 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -3.000000
-  target_internal_extend_gap_score: -3.000000
-  target_left_open_gap_score: -4.000000
-  target_left_extend_gap_score: -4.000000
-  target_right_open_gap_score: -4.000000
-  target_right_extend_gap_score: -4.000000
-  query_internal_open_gap_score: -2.000000
-  query_internal_extend_gap_score: -2.000000
-  query_left_open_gap_score: -5.000000
-  query_left_extend_gap_score: -5.000000
-  query_right_open_gap_score: -5.000000
-  query_right_extend_gap_score: -5.000000
+  open_internal_insertion_score: -3.000000
+  extend_internal_insertion_score: -3.000000
+  open_left_insertion_score: -4.000000
+  extend_left_insertion_score: -4.000000
+  open_right_insertion_score: -4.000000
+  extend_right_insertion_score: -4.000000
+  open_internal_deletion_score: -2.000000
+  extend_internal_deletion_score: -2.000000
+  open_left_deletion_score: -5.000000
+  extend_left_deletion_score: -5.000000
+  open_right_deletion_score: -5.000000
+  extend_right_deletion_score: -5.000000
   mode: global
 """,
         )
         with self.assertRaises(ValueError):
-            aligner.target_gap_score = "wrong"
+            aligner.insertion_score = "wrong"
         with self.assertRaises(ValueError):
-            aligner.query_gap_score = "wrong"
+            aligner.deletion_score = "wrong"
         with self.assertRaises(TypeError):
-            aligner.target_end_gap_score = "wrong"
+            aligner.end_insertion_score = "wrong"
         with self.assertRaises(TypeError):
-            aligner.query_end_gap_score = "wrong"
+            aligner.end_deletion_score = "wrong"
+
+    def test_aligner_property_gapscores_deprecated(self):
+        aligner = Align.PairwiseAligner()
+        value = 1
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_left_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_left_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 2
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_left_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_left_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 3
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.left_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.left_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 4
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_internal_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_internal_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 5
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_internal_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_internal_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 6
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.internal_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.internal_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 7
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_right_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_right_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 8
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_right_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_right_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 9
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.right_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.right_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 10
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_end_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_end_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 11
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_end_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_end_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 12
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.end_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.end_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 13
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 14
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_open_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 15
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_left_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_left_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 16
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_left_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_left_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 17
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.left_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.left_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 18
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_internal_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_internal_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 19
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_internal_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_internal_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 20
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.internal_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.internal_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 21
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_right_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_right_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 22
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_right_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_right_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 23
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.right_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.right_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 24
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_end_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_end_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 25
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_end_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_end_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 26
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.end_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.end_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 27
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 28
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_extend_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 29
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_left_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_left_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 30
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_left_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_left_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 31
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_internal_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_internal_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 32
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_internal_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_internal_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 33
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_right_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_right_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 34
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_right_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_right_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 35
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_end_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_end_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 36
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_end_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_end_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 37
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 38
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 39
+        aligner.open_left_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_left_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 40
+        aligner.open_left_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_left_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 41
+        aligner.open_left_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.left_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 42
+        aligner.open_internal_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_internal_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 43
+        aligner.open_internal_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_internal_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 44
+        aligner.open_internal_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.internal_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 45
+        aligner.open_right_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_right_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 46
+        aligner.open_right_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_right_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 47
+        aligner.open_right_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.right_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 48
+        aligner.open_end_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_end_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 49
+        aligner.open_end_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_end_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 50
+        aligner.open_end_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.end_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 51
+        aligner.open_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 52
+        aligner.open_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_open_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 53
+        aligner.extend_left_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_left_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 54
+        aligner.extend_left_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_left_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 55
+        aligner.extend_left_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.left_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 56
+        aligner.extend_internal_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_internal_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 57
+        aligner.extend_internal_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_internal_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 58
+        aligner.extend_internal_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.internal_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 59
+        aligner.extend_right_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_right_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 60
+        aligner.extend_right_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_right_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 61
+        aligner.extend_right_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.right_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 62
+        aligner.extend_end_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_end_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 63
+        aligner.extend_end_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_end_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 64
+        aligner.extend_end_gap_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.end_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 65
+        aligner.extend_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 66
+        aligner.extend_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_extend_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 67
+        aligner.left_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_left_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 68
+        aligner.left_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_left_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 69
+        aligner.internal_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_internal_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 70
+        aligner.internal_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_internal_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 71
+        aligner.right_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_right_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 72
+        aligner.right_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_right_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 73
+        aligner.end_insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_end_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 74
+        aligner.end_deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_end_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 75
+        aligner.insertion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.target_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 76
+        aligner.deletion_score = value
+        with self.assertWarns(BiopythonDeprecationWarning):
+            stored_value = aligner.query_gap_score
+        self.assertAlmostEqual(stored_value, value)
+        value = 77
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_left_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_left_insertion_score, value)
+        value = 78
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_left_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_left_deletion_score, value)
+        value = 79
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.left_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_left_gap_score, value)
+        value = 80
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_internal_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_internal_insertion_score, value)
+        value = 81
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_internal_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_internal_deletion_score, value)
+        value = 82
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.internal_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_internal_gap_score, value)
+        value = 83
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_right_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_right_insertion_score, value)
+        value = 84
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_right_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_right_deletion_score, value)
+        value = 85
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.right_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_right_gap_score, value)
+        value = 86
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_end_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_end_insertion_score, value)
+        value = 87
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_end_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_end_deletion_score, value)
+        value = 88
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.end_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_end_gap_score, value)
+        value = 89
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_insertion_score, value)
+        value = 90
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_open_gap_score = value
+        self.assertAlmostEqual(aligner.open_deletion_score, value)
+        value = 91
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_left_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_left_insertion_score, value)
+        value = 92
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_left_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_left_deletion_score, value)
+        value = 93
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.left_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_left_gap_score, value)
+        value = 94
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_internal_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_internal_insertion_score, value)
+        value = 95
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_internal_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_internal_deletion_score, value)
+        value = 96
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.internal_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_internal_gap_score, value)
+        value = 97
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_right_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_right_insertion_score, value)
+        value = 98
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_right_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_right_deletion_score, value)
+        value = 99
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.right_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_right_gap_score, value)
+        value = 100
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_end_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_end_insertion_score, value)
+        value = 101
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_end_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_end_deletion_score, value)
+        value = 102
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.end_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_end_gap_score, value)
+        value = 103
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_insertion_score, value)
+        value = 104
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_extend_gap_score = value
+        self.assertAlmostEqual(aligner.extend_deletion_score, value)
+        value = 105
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_left_gap_score = value
+        self.assertAlmostEqual(aligner.left_insertion_score, value)
+        value = 106
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_left_gap_score = value
+        self.assertAlmostEqual(aligner.left_deletion_score, value)
+        value = 107
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_internal_gap_score = value
+        self.assertAlmostEqual(aligner.internal_insertion_score, value)
+        value = 108
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_internal_gap_score = value
+        self.assertAlmostEqual(aligner.internal_deletion_score, value)
+        value = 109
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_right_gap_score = value
+        self.assertAlmostEqual(aligner.right_insertion_score, value)
+        value = 110
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_right_gap_score = value
+        self.assertAlmostEqual(aligner.right_deletion_score, value)
+        value = 111
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_end_gap_score = value
+        self.assertAlmostEqual(aligner.end_insertion_score, value)
+        value = 112
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_end_gap_score = value
+        self.assertAlmostEqual(aligner.end_deletion_score, value)
+        value = 113
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_gap_score = value
+        self.assertAlmostEqual(aligner.insertion_score, value)
+        value = 114
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_gap_score = value
+        self.assertAlmostEqual(aligner.deletion_score, value)
+
+        def gap_function1(x, y):
+            return x + y
+
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_gap_score = gap_function1
+        gap_function = aligner.deletion_score
+        self.assertEqual(gap_function, gap_function1)
+
+        def gap_function2(x, y):
+            return x * y
+
+        aligner.deletion_score = gap_function2
+        self.assertEqual(aligner.deletion_score, gap_function2)
+
+        def gap_function3(x, y):
+            return x / y
+
+        aligner.deletion_score = gap_function3
+        with self.assertWarns(BiopythonDeprecationWarning):
+            gap_function = aligner.query_gap_score
+        self.assertEqual(gap_function, gap_function3)
+
+        def gap_function4(x, y):
+            return x / y - 9
+
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.query_gap_score = gap_function4
+        with self.assertWarns(BiopythonDeprecationWarning):
+            gap_function = aligner.query_gap_score
+        self.assertEqual(gap_function, gap_function4)
+
+        def gap_function5(x, y):
+            return x + 2 * y
+
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_gap_score = gap_function5
+        gap_function = aligner.insertion_score
+        self.assertEqual(gap_function, gap_function5)
+
+        def gap_function6(x, y):
+            return x * y + 2
+
+        aligner.insertion_score = gap_function6
+        self.assertEqual(aligner.insertion_score, gap_function6)
+
+        def gap_function7(x, y):
+            return x / y - 2
+
+        aligner.insertion_score = gap_function7
+        with self.assertWarns(BiopythonDeprecationWarning):
+            gap_function = aligner.target_gap_score
+        self.assertEqual(gap_function, gap_function7)
+
+        def gap_function8(x, y):
+            return x / y * 2
+
+        with self.assertWarns(BiopythonDeprecationWarning):
+            aligner.target_gap_score = gap_function8
+        with self.assertWarns(BiopythonDeprecationWarning):
+            gap_function = aligner.target_gap_score
+        self.assertEqual(gap_function, gap_function8)
+
+        def gap_function9(x, y):
+            return x + 9 * y
+
+        aligner.gap_score = gap_function9
+        gap_function = aligner.gap_score
+        self.assertEqual(gap_function, gap_function9)
 
     def test_aligner_nonexisting_property(self):
         aligner = Align.PairwiseAligner()
@@ -214,18 +861,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: 0.000000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: 0.000000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: 0.000000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: 0.000000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: 0.000000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: 0.000000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: 0.000000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: 0.000000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: 0.000000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: 0.000000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: 0.000000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: 0.000000
+  extend_right_deletion_score: 0.000000
   mode: global
 """,
         )
@@ -235,6 +882,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), "-")
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -270,6 +922,11 @@ query             0 G-A-T 3
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -322,18 +979,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 0.000000
   mismatch_score: -1.000000
-  target_internal_open_gap_score: -5.000000
-  target_internal_extend_gap_score: -1.000000
-  target_left_open_gap_score: -5.000000
-  target_left_extend_gap_score: -1.000000
-  target_right_open_gap_score: -5.000000
-  target_right_extend_gap_score: -1.000000
-  query_internal_open_gap_score: -5.000000
-  query_internal_extend_gap_score: -1.000000
-  query_left_open_gap_score: -5.000000
-  query_left_extend_gap_score: -1.000000
-  query_right_open_gap_score: -5.000000
-  query_right_extend_gap_score: -1.000000
+  open_internal_insertion_score: -5.000000
+  extend_internal_insertion_score: -1.000000
+  open_left_insertion_score: -5.000000
+  extend_left_insertion_score: -1.000000
+  open_right_insertion_score: -5.000000
+  extend_right_insertion_score: -1.000000
+  open_internal_deletion_score: -5.000000
+  extend_internal_deletion_score: -1.000000
+  open_left_deletion_score: -5.000000
+  extend_left_deletion_score: -1.000000
+  open_right_deletion_score: -5.000000
+  extend_right_deletion_score: -1.000000
   mode: global
 """,
         )
@@ -341,6 +998,114 @@ Pairwise sequence aligner with parameters
         self.assertAlmostEqual(score, -7.0)
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, -7.0)
+
+    def test_fogsaa_simple1(self):
+        seq1 = "GAACT"
+        seq2 = "GAT"
+        aligner = Align.PairwiseAligner(mode="fogsaa")
+        self.assertEqual(
+            aligner.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+        score = aligner.score(seq1, seq2)
+        self.assertAlmostEqual(score, 3.0)
+        score = aligner.score(seq1, reverse_complement(seq2), "-")
+        self.assertAlmostEqual(score, 3.0)
+        alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 3.0)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GAACT 5
+                  0 ||--| 5
+query             0 GA--T 3
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 5))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned, np.array([[[0, 2], [4, 5]], [[0, 2], [2, 3]]])
+            )
+        )
+
+        alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 3.0)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GAACT 5
+                  0 ||--| 5
+query             3 GA--T 0
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 5))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned, np.array([[[0, 2], [4, 5]], [[3, 1], [1, 0]]])
+            )
+        )
+
+    def test_fogsaa_affine1(self):
+        seq1 = "CC"
+        seq2 = "ACCT"
+        aligner = Align.PairwiseAligner(mode="fogsaa")
+        aligner.match_score = 0
+        aligner.mismatch_score = -1
+        aligner.open_gap_score = -5
+        aligner.extend_gap_score = -1
+        self.assertEqual(
+            aligner.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+        score = aligner.score(seq1, seq2)
+        self.assertAlmostEqual(score, -7.0)
+        score = aligner.score(seq1, reverse_complement(seq2), strand="-")
+        self.assertAlmostEqual(score, -7.0)
+
+    def test_fogsaa_confirms_needleman_wunsch(self):
+        seq1 = "CCCCC"
+        seq2 = "ACCCCCT"
+
+        aligner_fogsaa = Align.PairwiseAligner(mode="fogsaa")
+        aligner_fogsaa.match_score = 1.1
+        aligner_fogsaa.mismatch_score = -1.83
+        aligner_fogsaa.gap_score = -2
+        self.assertEqual(
+            aligner_fogsaa.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+
+        aligner_nw = Align.PairwiseAligner(mode="global")
+        aligner_nw.match_score = 1.1
+        aligner_nw.mismatch_score = -1.83
+        aligner_nw.gap_score = -2
+        self.assertEqual(aligner_nw.algorithm, "Needleman-Wunsch")
+
+        score_fogsaa = aligner_fogsaa.score(seq1, seq2)
+        score_nw = aligner_nw.score(seq1, seq2)
+        self.assertAlmostEqual(score_fogsaa, score_nw)
+
+    def test_fogsaa_matrix_scoring(self):
+        seq1 = "AAAAAAAAAAA"
+        seq2 = "AAAAAAATAAA"
+        aligner = Align.PairwiseAligner(mode="fogsaa", scoring="blastn")
+        self.assertEqual(
+            aligner.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+        with self.assertWarns(BiopythonWarning):
+            score = aligner.score(seq1, seq2)
+        self.assertAlmostEqual(score, 17.0)
 
 
 class TestPairwiseLocal(unittest.TestCase):
@@ -356,24 +1121,29 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.100000
-  target_internal_extend_gap_score: -0.100000
-  target_left_open_gap_score: -0.100000
-  target_left_extend_gap_score: -0.100000
-  target_right_open_gap_score: -0.100000
-  target_right_extend_gap_score: -0.100000
-  query_internal_open_gap_score: -0.100000
-  query_internal_extend_gap_score: -0.100000
-  query_left_open_gap_score: -0.100000
-  query_left_extend_gap_score: -0.100000
-  query_right_open_gap_score: -0.100000
-  query_right_extend_gap_score: -0.100000
+  open_internal_insertion_score: -0.100000
+  extend_internal_insertion_score: -0.100000
+  open_left_insertion_score: -0.100000
+  extend_left_insertion_score: -0.100000
+  open_right_insertion_score: -0.100000
+  extend_right_insertion_score: -0.100000
+  open_internal_deletion_score: -0.100000
+  extend_internal_deletion_score: -0.100000
+  open_left_deletion_score: -0.100000
+  extend_left_deletion_score: -0.100000
+  open_right_deletion_score: -0.100000
+  extend_right_deletion_score: -0.100000
   mode: local
 """,
         )
         score = aligner.score("AwBw", "zABz")
         self.assertAlmostEqual(score, 1.9)
         alignments = aligner.align("AwBw", "zABz")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.9)
@@ -405,24 +1175,29 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.100000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -0.100000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -0.100000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.100000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -0.100000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -0.100000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -0.100000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -0.100000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -0.100000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.100000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -0.100000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -0.100000
+  extend_right_deletion_score: 0.000000
   mode: local
 """,
         )
         score = aligner.score("AwBw", "zABz")
         self.assertAlmostEqual(score, 1.9)
         alignments = aligner.align("AwBw", "zABz")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.9)
@@ -456,6 +1231,11 @@ class TestUnknownCharacter(unittest.TestCase):
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -471,7 +1251,20 @@ query             0 GA?T 4
         self.assertTrue(
             np.array_equal(alignment.aligned, np.array([[[0, 4]], [[0, 4]]]))
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 3)
+        self.assertEqual(counts.mismatches, 1)
+        counts = alignment.counts(wildcard="?")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 3)
+        self.assertEqual(counts.mismatches, 0)
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -487,6 +1280,14 @@ query             4 GA?T 0
         self.assertTrue(
             np.array_equal(alignment.aligned, np.array([[[0, 4]], [[4, 0]]]))
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 3)
+        self.assertEqual(counts.mismatches, 1)
+        counts = alignment.counts(wildcard="?")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 3)
+        self.assertEqual(counts.mismatches, 0)
         seq2 = "GAXT"
         aligner.wildcard = "X"
         score = aligner.score(seq1, seq2)
@@ -494,6 +1295,11 @@ query             4 GA?T 0
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -509,7 +1315,20 @@ query             0 GAXT 4
         self.assertTrue(
             np.array_equal(alignment.aligned, np.array([[[0, 4]], [[0, 4]]]))
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 3)
+        self.assertEqual(counts.mismatches, 1)
+        counts = alignment.counts(wildcard="X")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 3)
+        self.assertEqual(counts.mismatches, 0)
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -525,12 +1344,25 @@ query             4 GAXT 0
         self.assertTrue(
             np.array_equal(alignment.aligned, np.array([[[0, 4]], [[4, 0]]]))
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 3)
+        self.assertEqual(counts.mismatches, 1)
+        counts = alignment.counts(wildcard="X")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 3)
+        self.assertEqual(counts.mismatches, 0)
         aligner.wildcard = None
         score = aligner.score(seq1, seq2)
         self.assertAlmostEqual(score, 2.0)
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 2.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.0)
@@ -547,6 +1379,11 @@ query             0 GAXT 4
             np.array_equal(alignment.aligned, np.array([[[0, 4]], [[0, 4]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.0)
@@ -574,6 +1411,11 @@ query             4 GAXT 0
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 4.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=4) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 4.0)
@@ -592,7 +1434,20 @@ query             0 GA-A?T 5
                 np.array([[[0, 2], [3, 4], [4, 5]], [[0, 2], [2, 3], [4, 5]]]),
             )
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        counts = alignment.counts(wildcard="?")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=4) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 4.0)
@@ -611,6 +1466,14 @@ query             5 GA-A?T 0
                 np.array([[[0, 2], [3, 4], [4, 5]], [[5, 3], [3, 2], [1, 0]]]),
             )
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        counts = alignment.counts(wildcard="?")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
         seq1 = "GAXAT"
         seq2 = "GAAXT"
         aligner.wildcard = "X"
@@ -619,6 +1482,11 @@ query             5 GA-A?T 0
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 4.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=4) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 4.0)
@@ -637,7 +1505,20 @@ query             0 GA-AXT 5
                 np.array([[[0, 2], [3, 4], [4, 5]], [[0, 2], [2, 3], [4, 5]]]),
             )
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        counts = alignment.counts(wildcard="?")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=4) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 4.0)
@@ -656,6 +1537,160 @@ query             5 GA-AXT 0
                 np.array([[[0, 2], [3, 4], [4, 5]], [[5, 3], [3, 2], [1, 0]]]),
             )
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        counts = alignment.counts(wildcard="?")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+
+    def test_fogsaa_simple2(self):
+        seq1 = "GA?AT"
+        seq2 = "GAA?T"
+        aligner = Align.PairwiseAligner()
+        aligner.mode = "fogsaa"
+        aligner.wildcard = "?"
+        score = aligner.score(seq1, seq2)
+        self.assertAlmostEqual(score, 4.0)
+        score = aligner.score(seq1, reverse_complement(seq2), strand="-")
+        self.assertAlmostEqual(score, 4.0)
+        alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=4) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 4.0)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GA?A-T 5
+                  0 ||-|-| 6
+query             0 GA-A?T 5
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 6))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned,
+                np.array([[[0, 2], [3, 4], [4, 5]], [[0, 2], [2, 3], [4, 5]]]),
+            )
+        )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        counts = alignment.counts(wildcard="?")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=4) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 4.0)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GA?A-T 5
+                  0 ||-|-| 6
+query             5 GA-A?T 0
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 6))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned,
+                np.array([[[0, 2], [3, 4], [4, 5]], [[5, 3], [3, 2], [1, 0]]]),
+            )
+        )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        counts = alignment.counts(wildcard="?")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        seq1 = "GAXAT"
+        seq2 = "GAAXT"
+        aligner.wildcard = "X"
+        score = aligner.score(seq1, seq2)
+        self.assertAlmostEqual(score, 4.0)
+        score = aligner.score(seq1, reverse_complement(seq2), strand="-")
+        self.assertAlmostEqual(score, 4.0)
+        alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=4) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 4.0)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GAXA-T 5
+                  0 ||-|-| 6
+query             0 GA-AXT 5
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 6))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned,
+                np.array([[[0, 2], [3, 4], [4, 5]], [[0, 2], [2, 3], [4, 5]]]),
+            )
+        )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        counts = alignment.counts(wildcard="X")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=4) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 4.0)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GAXA-T 5
+                  0 ||-|-| 6
+query             5 GA-AXT 0
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 6))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned,
+                np.array([[[0, 2], [3, 4], [4, 5]], [[5, 3], [3, 2], [1, 0]]]),
+            )
+        )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
+        counts = alignment.counts(wildcard="X")
+        self.assertEqual(counts.aligned, 4)
+        self.assertEqual(counts.identities, 4)
+        self.assertEqual(counts.mismatches, 0)
 
 
 class TestPairwiseOpenPenalty(unittest.TestCase):
@@ -674,18 +1709,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 2.000000
   mismatch_score: -1.000000
-  target_internal_open_gap_score: -0.100000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -0.100000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -0.100000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.100000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -0.100000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -0.100000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -0.100000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -0.100000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -0.100000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.100000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -0.100000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -0.100000
+  extend_right_deletion_score: 0.000000
   mode: global
 """,
         )
@@ -696,6 +1731,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 1.9)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=1.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.9)
@@ -726,6 +1766,11 @@ query             0 A- 1
             np.array_equal(alignment.aligned, np.array([[[0, 1]], [[0, 1]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=1.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.9)
@@ -771,18 +1816,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.500000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.100000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -0.100000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -0.100000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.100000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -0.100000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -0.100000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -0.100000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -0.100000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -0.100000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.100000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -0.100000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -0.100000
+  extend_right_deletion_score: 0.000000
   mode: global
 """,
         )
@@ -793,6 +1838,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 2.9)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=2.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.9)
@@ -825,6 +1875,11 @@ query             0 GA- 2
             np.array_equal(alignment.aligned, np.array([[[0, 2]], [[0, 2]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=2.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.9)
@@ -860,8 +1915,8 @@ query             2 GA- 0
     def test_match_score_open_penalty3(self):
         aligner = Align.PairwiseAligner()
         aligner.mode = "global"
-        aligner.query_open_gap_score = -0.1
-        aligner.query_extend_gap_score = 0.0
+        aligner.open_deletion_score = -0.1
+        aligner.extend_deletion_score = 0.0
         self.assertEqual(aligner.algorithm, "Gotoh global alignment algorithm")
         self.assertEqual(
             str(aligner),
@@ -870,18 +1925,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: 0.000000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: 0.000000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: 0.000000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.100000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -0.100000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -0.100000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: 0.000000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: 0.000000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: 0.000000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.100000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -0.100000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -0.100000
+  extend_right_deletion_score: 0.000000
   mode: global
 """,
         )
@@ -892,6 +1947,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 2.9)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=2.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.9)
@@ -910,6 +1970,94 @@ query             0 GA--T 3
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=2.9) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 2.9)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GAACT 5
+                  0 ||--| 5
+query             3 GA--T 0
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 5))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned, np.array([[[0, 2], [4, 5]], [[3, 1], [1, 0]]])
+            )
+        )
+
+    def test_match_score_open_penalty3_fogsaa(self):
+        aligner = Align.PairwiseAligner()
+        aligner.mode = "fogsaa"
+        aligner.open_deletion_score = -0.1
+        aligner.extend_deletion_score = 0.0
+        self.assertEqual(
+            aligner.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+        self.assertEqual(
+            str(aligner),
+            """\
+Pairwise sequence aligner with parameters
+  wildcard: None
+  match_score: 1.000000
+  mismatch_score: 0.000000
+  open_internal_insertion_score: 0.000000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: 0.000000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: 0.000000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.100000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -0.100000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -0.100000
+  extend_right_deletion_score: 0.000000
+  mode: fogsaa
+""",
+        )
+        seq1 = "GAACT"
+        seq2 = "GAT"
+        score = aligner.score(seq1, seq2)
+        self.assertAlmostEqual(score, 2.9)
+        score = aligner.score(seq1, reverse_complement(seq2), strand="-")
+        self.assertAlmostEqual(score, 2.9)
+        alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=2.9) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 2.9)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GAACT 5
+                  0 ||--| 5
+query             0 GA--T 3
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 5))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned, np.array([[[0, 2], [4, 5]], [[0, 2], [2, 3]]])
+            )
+        )
+        alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=2.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.9)
@@ -942,18 +2090,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: -2.000000
-  target_internal_open_gap_score: -0.100000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -0.100000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -0.100000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.100000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -0.100000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -0.100000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -0.100000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -0.100000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -0.100000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.100000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -0.100000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -0.100000
+  extend_right_deletion_score: 0.000000
   mode: global
 """,
         )
@@ -964,6 +2112,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 1.7)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=1.7) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.7)
@@ -998,6 +2151,11 @@ query             0 G-ATA 4
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=1.7) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.7)
@@ -1047,18 +2205,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.200000
-  target_internal_extend_gap_score: -0.500000
-  target_left_open_gap_score: -0.200000
-  target_left_extend_gap_score: -0.500000
-  target_right_open_gap_score: -0.200000
-  target_right_extend_gap_score: -0.500000
-  query_internal_open_gap_score: -0.200000
-  query_internal_extend_gap_score: -0.500000
-  query_left_open_gap_score: -0.200000
-  query_left_extend_gap_score: -0.500000
-  query_right_open_gap_score: -0.200000
-  query_right_extend_gap_score: -0.500000
+  open_internal_insertion_score: -0.200000
+  extend_internal_insertion_score: -0.500000
+  open_left_insertion_score: -0.200000
+  extend_left_insertion_score: -0.500000
+  open_right_insertion_score: -0.200000
+  extend_right_insertion_score: -0.500000
+  open_internal_deletion_score: -0.200000
+  extend_internal_deletion_score: -0.500000
+  open_left_deletion_score: -0.200000
+  extend_left_deletion_score: -0.500000
+  open_right_deletion_score: -0.200000
+  extend_right_deletion_score: -0.500000
   mode: global
 """,
         )
@@ -1069,6 +2227,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 1.3)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1.3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.3)
@@ -1087,6 +2250,11 @@ query             0 G--T 2
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1.3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.3)
@@ -1118,18 +2286,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.200000
-  target_internal_extend_gap_score: -1.500000
-  target_left_open_gap_score: -0.200000
-  target_left_extend_gap_score: -1.500000
-  target_right_open_gap_score: -0.200000
-  target_right_extend_gap_score: -1.500000
-  query_internal_open_gap_score: -0.200000
-  query_internal_extend_gap_score: -1.500000
-  query_left_open_gap_score: -0.200000
-  query_left_extend_gap_score: -1.500000
-  query_right_open_gap_score: -0.200000
-  query_right_extend_gap_score: -1.500000
+  open_internal_insertion_score: -0.200000
+  extend_internal_insertion_score: -1.500000
+  open_left_insertion_score: -0.200000
+  extend_left_insertion_score: -1.500000
+  open_right_insertion_score: -0.200000
+  extend_right_insertion_score: -1.500000
+  open_internal_deletion_score: -0.200000
+  extend_internal_deletion_score: -1.500000
+  open_left_deletion_score: -0.200000
+  extend_left_deletion_score: -1.500000
+  open_right_deletion_score: -0.200000
+  extend_right_deletion_score: -1.500000
   mode: global
 """,
         )
@@ -1140,6 +2308,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 0.6)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=0.6) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 0.6)
@@ -1174,6 +2347,11 @@ query             0 G-T- 2
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=0.6) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 0.6)
@@ -1208,6 +2386,89 @@ query             2 G-T- 0
             )
         )
 
+    def test_extend_penalty2_fogsaa(self):
+        aligner = Align.PairwiseAligner()
+        aligner.mode = "fogsaa"
+        aligner.open_gap_score = -0.2
+        aligner.extend_gap_score = -1.5
+        self.assertEqual(
+            aligner.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+        self.assertEqual(
+            str(aligner),
+            """\
+Pairwise sequence aligner with parameters
+  wildcard: None
+  match_score: 1.000000
+  mismatch_score: 0.000000
+  open_internal_insertion_score: -0.200000
+  extend_internal_insertion_score: -1.500000
+  open_left_insertion_score: -0.200000
+  extend_left_insertion_score: -1.500000
+  open_right_insertion_score: -0.200000
+  extend_right_insertion_score: -1.500000
+  open_internal_deletion_score: -0.200000
+  extend_internal_deletion_score: -1.500000
+  open_left_deletion_score: -0.200000
+  extend_left_deletion_score: -1.500000
+  open_right_deletion_score: -0.200000
+  extend_right_deletion_score: -1.500000
+  mode: fogsaa
+""",
+        )
+        seq1 = "GACT"
+        seq2 = "GT"
+        score = aligner.score(seq1, seq2)
+        self.assertAlmostEqual(score, 0.6)
+        score = aligner.score(seq1, reverse_complement(seq2), strand="-")
+        self.assertAlmostEqual(score, 0.6)
+        alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=0.6) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 0.6)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GACT 4
+                  0 -.-| 4
+query             0 -G-T 2
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 4))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned, np.array([[[1, 2], [3, 4]], [[0, 1], [1, 2]]])
+            )
+        )
+        alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=0.6) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 0.6)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GACT 4
+                  0 -.-| 4
+query             2 -G-T 0
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 4))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned, np.array([[[1, 2], [3, 4]], [[2, 1], [1, 0]]])
+            )
+        )
+
 
 class TestPairwisePenalizeExtendWhenOpening(unittest.TestCase):
     def test_penalize_extend_when_opening(self):
@@ -1223,18 +2484,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -1.700000
-  target_internal_extend_gap_score: -1.500000
-  target_left_open_gap_score: -1.700000
-  target_left_extend_gap_score: -1.500000
-  target_right_open_gap_score: -1.700000
-  target_right_extend_gap_score: -1.500000
-  query_internal_open_gap_score: -1.700000
-  query_internal_extend_gap_score: -1.500000
-  query_left_open_gap_score: -1.700000
-  query_left_extend_gap_score: -1.500000
-  query_right_open_gap_score: -1.700000
-  query_right_extend_gap_score: -1.500000
+  open_internal_insertion_score: -1.700000
+  extend_internal_insertion_score: -1.500000
+  open_left_insertion_score: -1.700000
+  extend_left_insertion_score: -1.500000
+  open_right_insertion_score: -1.700000
+  extend_right_insertion_score: -1.500000
+  open_internal_deletion_score: -1.700000
+  extend_internal_deletion_score: -1.500000
+  open_left_deletion_score: -1.700000
+  extend_left_deletion_score: -1.500000
+  open_right_deletion_score: -1.700000
+  extend_right_deletion_score: -1.500000
   mode: global
 """,
         )
@@ -1245,6 +2506,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, -1.2)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=-1.2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, -1.2)
@@ -1263,6 +2529,94 @@ query             0 G--T 2
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=-1.2) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, -1.2)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GACT 4
+                  0 |--| 4
+query             2 G--T 0
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 4))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned, np.array([[[0, 1], [3, 4]], [[2, 1], [1, 0]]])
+            )
+        )
+
+    def test_penalize_extend_when_opening_fogsaa(self):
+        aligner = Align.PairwiseAligner()
+        aligner.mode = "fogsaa"
+        aligner.open_gap_score = -1.7
+        aligner.extend_gap_score = -1.5
+        self.assertEqual(
+            aligner.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+        self.assertEqual(
+            str(aligner),
+            """\
+Pairwise sequence aligner with parameters
+  wildcard: None
+  match_score: 1.000000
+  mismatch_score: 0.000000
+  open_internal_insertion_score: -1.700000
+  extend_internal_insertion_score: -1.500000
+  open_left_insertion_score: -1.700000
+  extend_left_insertion_score: -1.500000
+  open_right_insertion_score: -1.700000
+  extend_right_insertion_score: -1.500000
+  open_internal_deletion_score: -1.700000
+  extend_internal_deletion_score: -1.500000
+  open_left_deletion_score: -1.700000
+  extend_left_deletion_score: -1.500000
+  open_right_deletion_score: -1.700000
+  extend_right_deletion_score: -1.500000
+  mode: fogsaa
+""",
+        )
+        seq1 = "GACT"
+        seq2 = "GT"
+        score = aligner.score(seq1, seq2)
+        self.assertAlmostEqual(score, -1.2)
+        score = aligner.score(seq1, reverse_complement(seq2), strand="-")
+        self.assertAlmostEqual(score, -1.2)
+        alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=-1.2) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, -1.2)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GACT 4
+                  0 |--| 4
+query             0 G--T 2
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 4))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned, np.array([[[0, 1], [3, 4]], [[0, 1], [1, 2]]])
+            )
+        )
+        alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=-1.2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, -1.2)
@@ -1288,9 +2642,7 @@ class TestPairwisePenalizeEndgaps(unittest.TestCase):
         aligner.mode = "global"
         aligner.open_gap_score = -0.2
         aligner.extend_gap_score = -0.8
-        end_score = 0.0
-        aligner.target_end_gap_score = end_score
-        aligner.query_end_gap_score = end_score
+        aligner.end_gap_score = 0.0
         self.assertEqual(
             str(aligner),
             """\
@@ -1298,18 +2650,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.200000
-  target_internal_extend_gap_score: -0.800000
-  target_left_open_gap_score: 0.000000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: 0.000000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.200000
-  query_internal_extend_gap_score: -0.800000
-  query_left_open_gap_score: 0.000000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: 0.000000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -0.200000
+  extend_internal_insertion_score: -0.800000
+  open_left_insertion_score: 0.000000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: 0.000000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.200000
+  extend_internal_deletion_score: -0.800000
+  open_left_deletion_score: 0.000000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: 0.000000
+  extend_right_deletion_score: 0.000000
   mode: global
 """,
         )
@@ -1321,6 +2673,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 1.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (3 alignments; score=1) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 3)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.0)
@@ -1367,6 +2724,11 @@ query             0 GT-- 2
             np.array_equal(alignment.aligned, np.array([[[0, 2]], [[0, 2]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (3 alignments; score=1) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 3)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.0)
@@ -1413,6 +2775,88 @@ query             2 GT-- 0
             np.array_equal(alignment.aligned, np.array([[[0, 2]], [[2, 0]]]))
         )
 
+    def test_penalize_end_gaps_fogsaa(self):
+        aligner = Align.PairwiseAligner()
+        aligner.mode = "fogsaa"
+        aligner.open_gap_score = -0.2
+        aligner.extend_gap_score = -0.8
+        aligner.end_gap_score = 0.0
+        self.assertEqual(
+            str(aligner),
+            """\
+Pairwise sequence aligner with parameters
+  wildcard: None
+  match_score: 1.000000
+  mismatch_score: 0.000000
+  open_internal_insertion_score: -0.200000
+  extend_internal_insertion_score: -0.800000
+  open_left_insertion_score: 0.000000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: 0.000000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.200000
+  extend_internal_deletion_score: -0.800000
+  open_left_deletion_score: 0.000000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: 0.000000
+  extend_right_deletion_score: 0.000000
+  mode: fogsaa
+""",
+        )
+        self.assertEqual(
+            aligner.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+        seq1 = "GACT"
+        seq2 = "GT"
+        score = aligner.score(seq1, seq2)
+        self.assertAlmostEqual(score, 1.0)
+        score = aligner.score(seq1, reverse_complement(seq2), strand="-")
+        self.assertAlmostEqual(score, 1.0)
+
+        alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 1.0)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GACT 4
+                  0 |.-- 4
+query             0 GT-- 2
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 4))
+        self.assertTrue(
+            np.array_equal(alignment.aligned, np.array([[[0, 2]], [[0, 2]]]))
+        )
+
+        alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 1.0)
+        self.assertEqual(
+            str(alignment),
+            """\
+target            0 GACT 4
+                  0 |.-- 4
+query             2 GT-- 0
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 4))
+        self.assertTrue(
+            np.array_equal(alignment.aligned, np.array([[[0, 2]], [[2, 0]]]))
+        )
+
 
 class TestPairwiseSeparateGapPenalties(unittest.TestCase):
     def test_separate_gap_penalties1(self):
@@ -1421,15 +2865,11 @@ class TestPairwiseSeparateGapPenalties(unittest.TestCase):
         aligner = Align.PairwiseAligner()
         aligner.mode = "local"
         open_score, extend_score = (-0.3, 0)
-        aligner.target_open_gap_score = open_score
-        aligner.target_extend_gap_score = extend_score
-        aligner.target_end_open_gap_score = open_score
-        aligner.target_end_extend_gap_score = extend_score
+        aligner.open_insertion_score = open_score
+        aligner.extend_insertion_score = extend_score
         open_score, extend_score = (-0.8, 0)
-        aligner.query_open_gap_score = open_score
-        aligner.query_extend_gap_score = extend_score
-        aligner.query_end_open_gap_score = open_score
-        aligner.query_end_extend_gap_score = extend_score
+        aligner.open_deletion_score = open_score
+        aligner.extend_deletion_score = extend_score
         self.assertEqual(aligner.algorithm, "Gotoh local alignment algorithm")
         self.assertEqual(
             str(aligner),
@@ -1438,18 +2878,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.300000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -0.300000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -0.300000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.800000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -0.800000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -0.800000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -0.300000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -0.300000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -0.300000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.800000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -0.800000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -0.800000
+  extend_right_deletion_score: 0.000000
   mode: local
 """,
         )
@@ -1458,6 +2898,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 1.7)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=1.7) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.7)
@@ -1492,6 +2937,11 @@ query             0 GTCT 4
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=1.7) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.7)
@@ -1529,10 +2979,10 @@ query             4 GTCT 0
     def test_separate_gap_penalties2(self):
         aligner = Align.PairwiseAligner()
         aligner.mode = "local"
-        aligner.target_open_gap_score = -0.3
-        aligner.target_extend_gap_score = 0.0
-        aligner.query_open_gap_score = -0.2
-        aligner.query_extend_gap_score = 0.0
+        aligner.open_insertion_score = -0.3
+        aligner.extend_insertion_score = 0.0
+        aligner.open_deletion_score = -0.2
+        aligner.extend_deletion_score = 0.0
         self.assertEqual(aligner.algorithm, "Gotoh local alignment algorithm")
         self.assertEqual(
             str(aligner),
@@ -1541,18 +2991,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.300000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -0.300000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -0.300000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.200000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -0.200000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -0.200000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -0.300000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -0.300000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -0.300000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.200000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -0.200000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -0.200000
+  extend_right_deletion_score: 0.000000
   mode: local
 """,
         )
@@ -1563,6 +3013,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 1.8)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1.8) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.8)
@@ -1581,6 +3036,11 @@ query             0 G-T 2
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1.8) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.8)
@@ -1607,13 +3067,10 @@ class TestPairwiseSeparateGapPenaltiesWithExtension(unittest.TestCase):
         aligner = Align.PairwiseAligner()
         aligner.mode = "local"
         open_score, extend_score = (-0.1, 0)
-        aligner.target_open_gap_score = open_score
-        aligner.target_extend_gap_score = extend_score
-        aligner.target_end_open_gap_score = open_score
-        aligner.target_end_extend_gap_score = extend_score
+        aligner.open_insertion_score = open_score
+        aligner.extend_insertion_score = extend_score
         score = -0.1
-        aligner.query_gap_score = score
-        aligner.query_end_gap_score = score
+        aligner.deletion_score = score
         self.assertEqual(aligner.algorithm, "Gotoh local alignment algorithm")
         self.assertEqual(
             str(aligner),
@@ -1622,18 +3079,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.100000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -0.100000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -0.100000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.100000
-  query_internal_extend_gap_score: -0.100000
-  query_left_open_gap_score: -0.100000
-  query_left_extend_gap_score: -0.100000
-  query_right_open_gap_score: -0.100000
-  query_right_extend_gap_score: -0.100000
+  open_internal_insertion_score: -0.100000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -0.100000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -0.100000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.100000
+  extend_internal_deletion_score: -0.100000
+  open_left_deletion_score: -0.100000
+  extend_left_deletion_score: -0.100000
+  open_right_deletion_score: -0.100000
+  extend_right_deletion_score: -0.100000
   mode: local
 """,
         )
@@ -1642,6 +3099,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 1.9)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (3 alignments; score=1.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 3)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.9)
@@ -1692,6 +3154,11 @@ query             0 GTCCT 5
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (3 alignments; score=1.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 3)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.9)
@@ -1765,18 +3232,18 @@ class TestPairwiseMatchDictionary(unittest.TestCase):
             """\
 ^Pairwise sequence aligner with parameters
   substitution_matrix: <Array object at .*>
-  target_internal_open_gap_score: -0.500000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -0.500000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -0.500000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.500000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -0.500000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -0.500000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -0.500000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -0.500000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -0.500000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.500000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -0.500000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -0.500000
+  extend_right_deletion_score: 0.000000
   mode: local
 $""",
         )
@@ -1785,6 +3252,11 @@ $""",
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -1817,6 +3289,11 @@ query             0 AT-T 3
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -1867,18 +3344,18 @@ query             3 AT-T 0
             """\
 ^Pairwise sequence aligner with parameters
   substitution_matrix: <Array object at .*>
-  target_internal_open_gap_score: -1.000000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -1.000000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -1.000000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -1.000000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -1.000000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -1.000000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -1.000000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -1.000000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -1.000000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -1.000000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -1.000000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -1.000000
+  extend_right_deletion_score: 0.000000
   mode: local
 $""",
         )
@@ -1887,6 +3364,11 @@ $""",
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -1903,6 +3385,11 @@ query             0 ATT 3
             np.array_equal(alignment.aligned, np.array([[[0, 3]], [[0, 3]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -1937,18 +3424,18 @@ query             3 ATT 0
             """\
 ^Pairwise sequence aligner with parameters
   substitution_matrix: <Array object at .*>
-  target_internal_open_gap_score: -1.000000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -1.000000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -1.000000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -1.000000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -1.000000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -1.000000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -1.000000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -1.000000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -1.000000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -1.000000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -1.000000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -1.000000
+  extend_right_deletion_score: 0.000000
   mode: local
 $""",
         )
@@ -1957,6 +3444,11 @@ $""",
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -1973,6 +3465,11 @@ query             0 ATA 3
             np.array_equal(alignment.aligned, np.array([[[0, 3]], [[0, 3]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -2010,18 +3507,18 @@ query             4 ATA 1
             """\
 ^Pairwise sequence aligner with parameters
   substitution_matrix: <Array object at .*>
-  target_internal_open_gap_score: -0.500000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -0.500000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -0.500000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -0.500000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -0.500000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -0.500000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -0.500000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -0.500000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -0.500000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -0.500000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -0.500000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -0.500000
+  extend_right_deletion_score: 0.000000
   mode: local
 $""",
         )
@@ -2030,6 +3527,11 @@ $""",
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -2062,6 +3564,11 @@ query             0 AT-T 3
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -2114,18 +3621,18 @@ query             3 AT-T 0
             """\
 ^Pairwise sequence aligner with parameters
   substitution_matrix: <Array object at .*
-  target_internal_open_gap_score: -1.000000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -1.000000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -1.000000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -1.000000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -1.000000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -1.000000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -1.000000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -1.000000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -1.000000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -1.000000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -1.000000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -1.000000
+  extend_right_deletion_score: 0.000000
   mode: local
 $""",
         )
@@ -2134,6 +3641,11 @@ $""",
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -2150,6 +3662,11 @@ query             0 ATT 3
             np.array_equal(alignment.aligned, np.array([[[0, 3]], [[0, 3]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -2186,18 +3703,18 @@ query             3 ATT 0
             """\
 ^Pairwise sequence aligner with parameters
   substitution_matrix: <Array object at .*>
-  target_internal_open_gap_score: -1.000000
-  target_internal_extend_gap_score: 0.000000
-  target_left_open_gap_score: -1.000000
-  target_left_extend_gap_score: 0.000000
-  target_right_open_gap_score: -1.000000
-  target_right_extend_gap_score: 0.000000
-  query_internal_open_gap_score: -1.000000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: -1.000000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: -1.000000
-  query_right_extend_gap_score: 0.000000
+  open_internal_insertion_score: -1.000000
+  extend_internal_insertion_score: 0.000000
+  open_left_insertion_score: -1.000000
+  extend_left_insertion_score: 0.000000
+  open_right_insertion_score: -1.000000
+  extend_right_insertion_score: 0.000000
+  open_internal_deletion_score: -1.000000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: -1.000000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: -1.000000
+  extend_right_deletion_score: 0.000000
   mode: local
 $""",
         )
@@ -2206,6 +3723,11 @@ $""",
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -2222,6 +3744,11 @@ query             0 ATA 3
             np.array_equal(alignment.aligned, np.array([[[0, 3]], [[0, 3]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -2253,24 +3780,29 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.300000
-  target_internal_extend_gap_score: -0.100000
-  target_left_open_gap_score: -0.300000
-  target_left_extend_gap_score: -0.100000
-  target_right_open_gap_score: -0.300000
-  target_right_extend_gap_score: -0.100000
-  query_internal_open_gap_score: -0.300000
-  query_internal_extend_gap_score: -0.100000
-  query_left_open_gap_score: -0.300000
-  query_left_extend_gap_score: -0.100000
-  query_right_open_gap_score: -0.300000
-  query_right_extend_gap_score: -0.100000
+  open_internal_insertion_score: -0.300000
+  extend_internal_insertion_score: -0.100000
+  open_left_insertion_score: -0.300000
+  extend_left_insertion_score: -0.100000
+  open_right_insertion_score: -0.300000
+  extend_right_insertion_score: -0.100000
+  open_internal_deletion_score: -0.300000
+  extend_internal_deletion_score: -0.100000
+  open_left_deletion_score: -0.300000
+  extend_left_deletion_score: -0.100000
+  open_right_deletion_score: -0.300000
+  extend_right_deletion_score: -0.100000
   mode: local
 """,
         )
         score = aligner.score("abcde", "c")
         self.assertAlmostEqual(score, 1)
         alignments = aligner.align("abcde", "c")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1)
@@ -2300,24 +3832,29 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.300000
-  target_internal_extend_gap_score: -0.100000
-  target_left_open_gap_score: -0.300000
-  target_left_extend_gap_score: -0.100000
-  target_right_open_gap_score: -0.300000
-  target_right_extend_gap_score: -0.100000
-  query_internal_open_gap_score: -0.300000
-  query_internal_extend_gap_score: -0.100000
-  query_left_open_gap_score: -0.300000
-  query_left_extend_gap_score: -0.100000
-  query_right_open_gap_score: -0.300000
-  query_right_extend_gap_score: -0.100000
+  open_internal_insertion_score: -0.300000
+  extend_internal_insertion_score: -0.100000
+  open_left_insertion_score: -0.300000
+  extend_left_insertion_score: -0.100000
+  open_right_insertion_score: -0.300000
+  extend_right_insertion_score: -0.100000
+  open_internal_deletion_score: -0.300000
+  extend_internal_deletion_score: -0.100000
+  open_left_deletion_score: -0.300000
+  extend_left_deletion_score: -0.100000
+  open_right_deletion_score: -0.300000
+  extend_right_deletion_score: -0.100000
   mode: local
 """,
         )
         score = aligner.score("abcce", "c")
         self.assertAlmostEqual(score, 1)
         alignments = aligner.align("abcce", "c")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=1) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1)
@@ -2361,18 +3898,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.300000
-  target_internal_extend_gap_score: -0.100000
-  target_left_open_gap_score: -0.300000
-  target_left_extend_gap_score: -0.100000
-  target_right_open_gap_score: -0.300000
-  target_right_extend_gap_score: -0.100000
-  query_internal_open_gap_score: -0.300000
-  query_internal_extend_gap_score: -0.100000
-  query_left_open_gap_score: -0.300000
-  query_left_extend_gap_score: -0.100000
-  query_right_open_gap_score: -0.300000
-  query_right_extend_gap_score: -0.100000
+  open_internal_insertion_score: -0.300000
+  extend_internal_insertion_score: -0.100000
+  open_left_insertion_score: -0.300000
+  extend_left_insertion_score: -0.100000
+  open_right_insertion_score: -0.300000
+  extend_right_insertion_score: -0.100000
+  open_internal_deletion_score: -0.300000
+  extend_internal_deletion_score: -0.100000
+  open_left_deletion_score: -0.300000
+  extend_left_deletion_score: -0.100000
+  open_right_deletion_score: -0.300000
+  extend_right_deletion_score: -0.100000
   mode: global
 """,
         )
@@ -2381,6 +3918,11 @@ Pairwise sequence aligner with parameters
         score = aligner.score(seq1, seq2)
         self.assertAlmostEqual(score, 0.2)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=0.2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 0.2)
@@ -2410,19 +3952,52 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.300000
-  target_internal_extend_gap_score: -0.100000
-  target_left_open_gap_score: -0.300000
-  target_left_extend_gap_score: -0.100000
-  target_right_open_gap_score: -0.300000
-  target_right_extend_gap_score: -0.100000
-  query_internal_open_gap_score: -0.300000
-  query_internal_extend_gap_score: -0.100000
-  query_left_open_gap_score: -0.300000
-  query_left_extend_gap_score: -0.100000
-  query_right_open_gap_score: -0.300000
-  query_right_extend_gap_score: -0.100000
+  open_internal_insertion_score: -0.300000
+  extend_internal_insertion_score: -0.100000
+  open_left_insertion_score: -0.300000
+  extend_left_insertion_score: -0.100000
+  open_right_insertion_score: -0.300000
+  extend_right_insertion_score: -0.100000
+  open_internal_deletion_score: -0.300000
+  extend_internal_deletion_score: -0.100000
+  open_left_deletion_score: -0.300000
+  extend_left_deletion_score: -0.100000
+  open_right_deletion_score: -0.300000
+  extend_right_deletion_score: -0.100000
   mode: global
+""",
+        )
+        score = aligner.score("abcde", "c")
+        self.assertAlmostEqual(score, 0.2)
+
+    def test_align_one_char_score3_fogsaa(self):
+        aligner = Align.PairwiseAligner()
+        aligner.mode = "fogsaa"
+        aligner.open_gap_score = -0.3
+        aligner.extend_gap_score = -0.1
+        self.assertEqual(
+            aligner.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+        self.assertEqual(
+            str(aligner),
+            """\
+Pairwise sequence aligner with parameters
+  wildcard: None
+  match_score: 1.000000
+  mismatch_score: 0.000000
+  open_internal_insertion_score: -0.300000
+  extend_internal_insertion_score: -0.100000
+  open_left_insertion_score: -0.300000
+  extend_left_insertion_score: -0.100000
+  open_right_insertion_score: -0.300000
+  extend_right_insertion_score: -0.100000
+  open_internal_deletion_score: -0.300000
+  extend_internal_deletion_score: -0.100000
+  open_left_deletion_score: -0.300000
+  extend_left_deletion_score: -0.100000
+  open_right_deletion_score: -0.300000
+  extend_right_deletion_score: -0.100000
+  mode: fogsaa
 """,
         )
         score = aligner.score("abcde", "c")
@@ -2456,16 +4031,16 @@ class TestPerSiteGapPenalties(unittest.TestCase):
         aligner.mode = "global"
         aligner.match_score = 1
         aligner.mismatch_score = -1
-        aligner.target_gap_score = nogaps
-        aligner.query_gap_score = specificgaps
+        aligner.insertion_score = nogaps
+        aligner.deletion_score = specificgaps
         self.assertEqual(
             str(aligner),
             f"""Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: -1.000000
-  target_gap_function: {nogaps}
-  query_gap_function: {specificgaps}
+  insertion_score_function: {nogaps}
+  deletion_score_function: {specificgaps}
   mode: global
 """,
         )
@@ -2477,6 +4052,11 @@ class TestPerSiteGapPenalties(unittest.TestCase):
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 2)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2)
@@ -2496,6 +4076,11 @@ query             0 --AABBBAAAACC----------CCAAAABBBAA-- 22
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2)
@@ -2540,16 +4125,16 @@ query            22 --AABBBAAAACC----------CCAAAABBBAA--  0
         aligner.mode = "global"
         aligner.match_score = 1
         aligner.mismatch_score = -1
-        aligner.target_gap_score = nogaps
-        aligner.query_gap_score = specificgaps
+        aligner.insertion_score = nogaps
+        aligner.deletion_score = specificgaps
         self.assertEqual(
             str(aligner),
             f"""Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: -1.000000
-  target_gap_function: {nogaps}
-  query_gap_function: {specificgaps}
+  insertion_score_function: {nogaps}
+  deletion_score_function: {specificgaps}
   mode: global
 """,
         )
@@ -2561,6 +4146,11 @@ query            22 --AABBBAAAACC----------CCAAAABBBAA--  0
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, -10)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=-10) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, -10)
@@ -2595,6 +4185,11 @@ query             0 AAB------------BBAAAACCCCAAAABBBAA-- 22
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=-10) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, -10)
@@ -2645,7 +4240,7 @@ query            22 --AABBBAAAACCCCAAAABB----------BAA--  0
         aligner.mode = "global"
         aligner.match_score = 1
         aligner.mismatch_score = -10
-        aligner.target_gap_score = gap_score
+        aligner.insertion_score = gap_score
         self.assertEqual(
             aligner.algorithm, "Waterman-Smith-Beyer global alignment algorithm"
         )
@@ -2655,13 +4250,13 @@ query            22 --AABBBAAAACCCCAAAABB----------BAA--  0
   wildcard: None
   match_score: 1.000000
   mismatch_score: -10.000000
-  target_gap_function: {gap_score}
-  query_internal_open_gap_score: 0.000000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: 0.000000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: 0.000000
-  query_right_extend_gap_score: 0.000000
+  insertion_score_function: {gap_score}
+  open_internal_deletion_score: 0.000000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: 0.000000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: 0.000000
+  extend_right_deletion_score: 0.000000
   mode: global
 """,
         )
@@ -2670,6 +4265,11 @@ query            22 --AABBBAAAACCCCAAAABB----------BAA--  0
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 2.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.0)
@@ -2688,6 +4288,11 @@ query             0 TTG--GAA 6
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.0)
@@ -2705,15 +4310,15 @@ query             6 TTG--GAA 0
                 alignment.aligned, np.array([[[0, 2], [4, 6]], [[6, 4], [2, 0]]])
             )
         )
-        aligner.query_gap_score = gap_score
+        aligner.deletion_score = gap_score
         self.assertEqual(
             str(aligner),
             f"""Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: -10.000000
-  target_gap_function: {gap_score}
-  query_gap_function: {gap_score}
+  insertion_score_function: {gap_score}
+  deletion_score_function: {gap_score}
   mode: global
 """,
         )
@@ -2722,6 +4327,11 @@ query             6 TTG--GAA 0
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, -8.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (4 alignments; score=-8) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 4)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, -8.0)
@@ -2790,6 +4400,11 @@ query             0 TTG--GAA 6
             )
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (4 alignments; score=-8) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 4)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, -8.0)
@@ -2878,8 +4493,8 @@ query             6 TTG--GAA 0
         aligner.mode = "local"
         aligner.match_score = 1
         aligner.mismatch_score = -1
-        aligner.target_gap_score = nogaps
-        aligner.query_gap_score = specificgaps
+        aligner.insertion_score = nogaps
+        aligner.deletion_score = specificgaps
         self.assertEqual(
             aligner.algorithm, "Waterman-Smith-Beyer local alignment algorithm"
         )
@@ -2889,8 +4504,8 @@ query             6 TTG--GAA 0
   wildcard: None
   match_score: 1.000000
   mismatch_score: -1.000000
-  target_gap_function: {nogaps}
-  query_gap_function: {specificgaps}
+  insertion_score_function: {nogaps}
+  deletion_score_function: {specificgaps}
   mode: local
 """,
         )
@@ -2899,6 +4514,11 @@ query             6 TTG--GAA 0
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 13)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 13)
@@ -2929,6 +4549,11 @@ query             9 CCCCAAAABBBAA 22
             np.array_equal(alignment.aligned, np.array([[[21, 34]], [[9, 22]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 13)
@@ -2984,16 +4609,16 @@ query            13 CCCCAAAABBBAA  0
         aligner.mode = "local"
         aligner.match_score = 1
         aligner.mismatch_score = -1
-        aligner.target_gap_score = nogaps
-        aligner.query_gap_score = specificgaps
+        aligner.insertion_score = nogaps
+        aligner.deletion_score = specificgaps
         self.assertEqual(
             str(aligner),
             f"""Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: -1.000000
-  target_gap_function: {nogaps}
-  query_gap_function: {specificgaps}
+  insertion_score_function: {nogaps}
+  deletion_score_function: {specificgaps}
   mode: local
 """,
         )
@@ -3005,6 +4630,11 @@ query            13 CCCCAAAABBBAA  0
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 13)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 13)
@@ -3035,6 +4665,11 @@ query             9 CCCCAAAABBBAA 22
             np.array_equal(alignment.aligned, np.array([[[21, 34]], [[9, 22]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 13)
@@ -3081,7 +4716,7 @@ query            13 CCCCAAAABBBAA  0
         aligner.mode = "local"
         aligner.match_score = 1
         aligner.mismatch_score = -10
-        aligner.target_gap_score = gap_score
+        aligner.insertion_score = gap_score
         self.assertEqual(
             aligner.algorithm, "Waterman-Smith-Beyer local alignment algorithm"
         )
@@ -3091,13 +4726,13 @@ query            13 CCCCAAAABBBAA  0
   wildcard: None
   match_score: 1.000000
   mismatch_score: -10.000000
-  target_gap_function: {gap_score}
-  query_internal_open_gap_score: 0.000000
-  query_internal_extend_gap_score: 0.000000
-  query_left_open_gap_score: 0.000000
-  query_left_extend_gap_score: 0.000000
-  query_right_open_gap_score: 0.000000
-  query_right_extend_gap_score: 0.000000
+  insertion_score_function: {gap_score}
+  open_internal_deletion_score: 0.000000
+  extend_internal_deletion_score: 0.000000
+  open_left_deletion_score: 0.000000
+  extend_left_deletion_score: 0.000000
+  open_right_deletion_score: 0.000000
+  extend_right_deletion_score: 0.000000
   mode: local
 """,
         )
@@ -3106,6 +4741,11 @@ query            13 CCCCAAAABBBAA  0
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 2.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.0)
@@ -3136,6 +4776,11 @@ query             4 AA 6
             np.array_equal(alignment.aligned, np.array([[[4, 6]], [[4, 6]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.0)
@@ -3165,15 +4810,15 @@ query             2 AA 0
         self.assertTrue(
             np.array_equal(alignment.aligned, np.array([[[4, 6]], [[2, 0]]]))
         )
-        aligner.query_gap_score = gap_score
+        aligner.deletion_score = gap_score
         self.assertEqual(
             str(aligner),
             f"""Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: -10.000000
-  target_gap_function: {gap_score}
-  query_gap_function: {gap_score}
+  insertion_score_function: {gap_score}
+  deletion_score_function: {gap_score}
   mode: local
 """,
         )
@@ -3182,6 +4827,11 @@ query             2 AA 0
         score = aligner.score(seq1, reverse_complement(seq2), strand="-")
         self.assertAlmostEqual(score, 2.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.0)
@@ -3212,6 +4862,11 @@ query             4 AA 6
             np.array_equal(alignment.aligned, np.array([[[4, 6]], [[4, 6]]]))
         )
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=2) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 2.0)
@@ -3251,8 +4906,8 @@ query             2 AA 0
             raise RuntimeError("broken gap function")
 
         aligner = Align.PairwiseAligner()
-        aligner.target_gap_score = gap_score
-        aligner.query_gap_score = -1
+        aligner.insertion_score = gap_score
+        aligner.deletion_score = -1
         aligner.mode = "global"
         with self.assertRaises(RuntimeError):
             aligner.score(seq1, seq2)
@@ -3275,8 +4930,8 @@ query             2 AA 0
         with self.assertRaises(RuntimeError):
             alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
             alignments = list(alignments)
-        aligner.target_gap_score = -1
-        aligner.query_gap_score = gap_score
+        aligner.insertion_score = -1
+        aligner.deletion_score = gap_score
         aligner.mode = "global"
         with self.assertRaises(RuntimeError):
             aligner.score(seq1, seq2)
@@ -3319,6 +4974,11 @@ class TestAlignerInput(unittest.TestCase):
         score = aligner.score(seq1, seq2)
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         self.assertEqual(
             str(alignments[0]),
@@ -3344,6 +5004,11 @@ Gly Ala Ala Cys Thr
         score = aligner.score(seq1, seq2)
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertEqual(
@@ -3422,6 +5087,11 @@ Pro Pro Gly --- Ala --- Thr --- ---
         score = aligner.score(seq1, seq2)
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertEqual(
@@ -3474,6 +5144,11 @@ Gly Ala Ala Cys Thr
         r1 = SeqRecord(s1, id="first", description="1st sequence")
         r2 = SeqRecord(s2, id="second", description="2nd sequence")
         alignments = aligner.align(t1, t2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=-7) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -3494,6 +5169,11 @@ CGTT
 """,
         )
         alignments = aligner.align(s1, s2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=-7) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -3514,6 +5194,11 @@ CGTT
 """,
         )
         alignments = aligner.align(r1, r2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=-7) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -3538,7 +5223,7 @@ CGTT
 class TestArgumentErrors(unittest.TestCase):
     def test_aligner_string_errors(self):
         aligner = Align.PairwiseAligner()
-        message = "^sequence has unexpected type int$"
+        message = "^argument is not a sequence$"
         with self.assertRaisesRegex(TypeError, message):
             aligner.score("AAA", 3)
         message = "^sequence has zero length$"
@@ -3642,6 +5327,11 @@ class TestOverflowError(unittest.TestCase):
         record = SeqIO.read(path, "fasta")
         seq2 = record.seq
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (>{sys.maxsize} alignments; score=1286) at {hex(id(alignments))}>""",
+        )
         self.assertAlmostEqual(alignments.score, 1286.0)
         message = "^number of optimal alignments is larger than (%d|%d)$" % (
             2147483647,  # on 32-bit systems
@@ -3782,6 +5472,11 @@ query          1534 CCTCCTT---A 1542
         self.assertEqual(alignment.shape, (2, 1811))
         self.assertAlmostEqual(alignment.score, 1286.0)
         alignments = aligner.align(seq1, reverse_complement(seq2), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (>{sys.maxsize} alignments; score=1286) at {hex(id(alignments))}>""",
+        )
         self.assertAlmostEqual(alignments.score, 1286.0)
         message = "^number of optimal alignments is larger than (%d|%d)$" % (
             2147483647,  # on 32-bit systems
@@ -3929,7 +5624,7 @@ class TestKeywordArgumentsConstructor(unittest.TestCase):
             mode="local",
             open_gap_score=-0.3,
             extend_gap_score=-0.1,
-            target_open_gap_score=-0.2,
+            open_insertion_score=-0.2,
         )
         self.assertEqual(
             str(aligner),
@@ -3938,18 +5633,18 @@ Pairwise sequence aligner with parameters
   wildcard: None
   match_score: 1.000000
   mismatch_score: 0.000000
-  target_internal_open_gap_score: -0.200000
-  target_internal_extend_gap_score: -0.100000
-  target_left_open_gap_score: -0.200000
-  target_left_extend_gap_score: -0.100000
-  target_right_open_gap_score: -0.200000
-  target_right_extend_gap_score: -0.100000
-  query_internal_open_gap_score: -0.300000
-  query_internal_extend_gap_score: -0.100000
-  query_left_open_gap_score: -0.300000
-  query_left_extend_gap_score: -0.100000
-  query_right_open_gap_score: -0.300000
-  query_right_extend_gap_score: -0.100000
+  open_internal_insertion_score: -0.200000
+  extend_internal_insertion_score: -0.100000
+  open_left_insertion_score: -0.200000
+  extend_left_insertion_score: -0.100000
+  open_right_insertion_score: -0.200000
+  extend_right_insertion_score: -0.100000
+  open_internal_deletion_score: -0.300000
+  extend_internal_deletion_score: -0.100000
+  open_left_deletion_score: -0.300000
+  extend_left_deletion_score: -0.100000
+  open_right_deletion_score: -0.300000
+  extend_right_deletion_score: -0.100000
   mode: local
 """,
         )
@@ -3963,18 +5658,18 @@ class TestPredefinedScoringSchemes(unittest.TestCase):
             """\
 ^Pairwise sequence aligner with parameters
   substitution_matrix: <Array object at .*
-  target_internal_open_gap_score: -7.000000
-  target_internal_extend_gap_score: -2.000000
-  target_left_open_gap_score: -7.000000
-  target_left_extend_gap_score: -2.000000
-  target_right_open_gap_score: -7.000000
-  target_right_extend_gap_score: -2.000000
-  query_internal_open_gap_score: -7.000000
-  query_internal_extend_gap_score: -2.000000
-  query_left_open_gap_score: -7.000000
-  query_left_extend_gap_score: -2.000000
-  query_right_open_gap_score: -7.000000
-  query_right_extend_gap_score: -2.000000
+  open_internal_insertion_score: -7.000000
+  extend_internal_insertion_score: -2.000000
+  open_left_insertion_score: -7.000000
+  extend_left_insertion_score: -2.000000
+  open_right_insertion_score: -7.000000
+  extend_right_insertion_score: -2.000000
+  open_internal_deletion_score: -7.000000
+  extend_internal_deletion_score: -2.000000
+  open_left_deletion_score: -7.000000
+  extend_left_deletion_score: -2.000000
+  open_right_deletion_score: -7.000000
+  extend_right_deletion_score: -2.000000
   mode: global
 $""",
         )
@@ -4007,18 +5702,18 @@ N -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0 -2.0
             """\
 ^Pairwise sequence aligner with parameters
   substitution_matrix: <Array object at .*
-  target_internal_open_gap_score: -2.500000
-  target_internal_extend_gap_score: -2.500000
-  target_left_open_gap_score: -2.500000
-  target_left_extend_gap_score: -2.500000
-  target_right_open_gap_score: -2.500000
-  target_right_extend_gap_score: -2.500000
-  query_internal_open_gap_score: -2.500000
-  query_internal_extend_gap_score: -2.500000
-  query_left_open_gap_score: -2.500000
-  query_left_extend_gap_score: -2.500000
-  query_right_open_gap_score: -2.500000
-  query_right_extend_gap_score: -2.500000
+  open_internal_insertion_score: -2.500000
+  extend_internal_insertion_score: -2.500000
+  open_left_insertion_score: -2.500000
+  extend_left_insertion_score: -2.500000
+  open_right_insertion_score: -2.500000
+  extend_right_insertion_score: -2.500000
+  open_internal_deletion_score: -2.500000
+  extend_internal_deletion_score: -2.500000
+  open_left_deletion_score: -2.500000
+  extend_left_deletion_score: -2.500000
+  open_right_deletion_score: -2.500000
+  extend_right_deletion_score: -2.500000
   mode: global
 $""",
         )
@@ -4051,18 +5746,18 @@ N -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0
             """\
 ^Pairwise sequence aligner with parameters
   substitution_matrix: <Array object at .*
-  target_internal_open_gap_score: -12.000000
-  target_internal_extend_gap_score: -1.000000
-  target_left_open_gap_score: -12.000000
-  target_left_extend_gap_score: -1.000000
-  target_right_open_gap_score: -12.000000
-  target_right_extend_gap_score: -1.000000
-  query_internal_open_gap_score: -12.000000
-  query_internal_extend_gap_score: -1.000000
-  query_left_open_gap_score: -12.000000
-  query_left_extend_gap_score: -1.000000
-  query_right_open_gap_score: -12.000000
-  query_right_extend_gap_score: -1.000000
+  open_internal_insertion_score: -12.000000
+  extend_internal_insertion_score: -1.000000
+  open_left_insertion_score: -12.000000
+  extend_left_insertion_score: -1.000000
+  open_right_insertion_score: -12.000000
+  extend_right_insertion_score: -1.000000
+  open_internal_deletion_score: -12.000000
+  extend_internal_deletion_score: -1.000000
+  open_left_deletion_score: -12.000000
+  extend_left_deletion_score: -1.000000
+  open_right_deletion_score: -12.000000
+  extend_right_deletion_score: -1.000000
   mode: global
 $""",
         )
@@ -4112,6 +5807,11 @@ class TestUnicodeStrings(unittest.TestCase):
         score = aligner.score(seq1, seq2)
         self.assertAlmostEqual(score, 3.0)
         alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (2 alignments; score=3) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 2)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 3.0)
@@ -4147,6 +5847,41 @@ class TestUnicodeStrings(unittest.TestCase):
             )
         )
 
+    def test_needlemanwunsch_simple1_fogsaa(self):
+        seq1 = "ĞĀĀČŦ"
+        seq2 = "ĞĀŦ"
+        aligner = Align.PairwiseAligner()
+        aligner.mode = "fogsaa"
+        aligner.alphabet = None
+        self.assertEqual(
+            aligner.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+        score = aligner.score(seq1, seq2)
+        self.assertAlmostEqual(score, 3.0)
+        alignments = aligner.align(seq1, seq2)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=3) at {hex(id(alignments))}>""",
+        )
+        self.assertEqual(len(alignments), 1)
+        alignment = alignments[0]
+        self.assertAlmostEqual(alignment.score, 3.0)
+        self.assertEqual(
+            str(alignment),
+            """\
+ĞĀĀČŦ
+||--|
+ĞĀ--Ŧ
+""",
+        )
+        self.assertEqual(alignment.shape, (2, 5))
+        self.assertTrue(
+            np.array_equal(
+                alignment.aligned, np.array([[[0, 2], [4, 5]], [[0, 2], [2, 3]]])
+            )
+        )
+
     def test_align_affine1_score(self):
         aligner = Align.PairwiseAligner()
         aligner.mode = "global"
@@ -4159,6 +5894,20 @@ class TestUnicodeStrings(unittest.TestCase):
         score = aligner.score("いい", "あいいう")
         self.assertAlmostEqual(score, -7.0)
 
+    def test_align_affine1_score_fogsaa(self):
+        aligner = Align.PairwiseAligner()
+        aligner.mode = "fogsaa"
+        aligner.alphabet = None
+        aligner.match_score = 0
+        aligner.mismatch_score = -1
+        aligner.open_gap_score = -5
+        aligner.extend_gap_score = -1
+        self.assertEqual(
+            aligner.algorithm, "Fast Optimal Global Sequence Alignment Algorithm"
+        )
+        score = aligner.score("いい", "あいいう")
+        self.assertAlmostEqual(score, -7.0)
+
     def test_smithwaterman(self):
         aligner = Align.PairwiseAligner()
         aligner.mode = "local"
@@ -4168,6 +5917,11 @@ class TestUnicodeStrings(unittest.TestCase):
         score = aligner.score("ℵℷℶℷ", "ℸℵℶℸ")
         self.assertAlmostEqual(score, 1.9)
         alignments = aligner.align("ℵℷℶℷ", "ℸℵℶℸ")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.9)
@@ -4196,6 +5950,11 @@ class TestUnicodeStrings(unittest.TestCase):
         score = aligner.score("生物科物", "学生科学")
         self.assertAlmostEqual(score, 1.9)
         alignments = aligner.align("生物科物", "学生科学")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=1.9) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 1.9)
@@ -4223,18 +5982,18 @@ class TestAlignerPickling(unittest.TestCase):
         aligner.wildcard = "X"
         aligner.match_score = 3
         aligner.mismatch_score = -2
-        aligner.target_internal_open_gap_score = -2.5
-        aligner.target_internal_extend_gap_score = -3.5
-        aligner.target_left_open_gap_score = -2.5
-        aligner.target_left_extend_gap_score = -3.5
-        aligner.target_right_open_gap_score = -4
-        aligner.target_right_extend_gap_score = -4
-        aligner.query_internal_open_gap_score = -0.1
-        aligner.query_internal_extend_gap_score = -2
-        aligner.query_left_open_gap_score = -9
-        aligner.query_left_extend_gap_score = +1
-        aligner.query_right_open_gap_score = -1
-        aligner.query_right_extend_gap_score = -2
+        aligner.open_internal_insertion_score = -2.5
+        aligner.extend_internal_insertion_score = -3.5
+        aligner.open_left_insertion_score = -2.5
+        aligner.extend_left_insertion_score = -3.5
+        aligner.open_right_insertion_score = -4
+        aligner.extend_right_insertion_score = -4
+        aligner.open_internal_deletion_score = -0.1
+        aligner.extend_internal_deletion_score = -2
+        aligner.open_left_deletion_score = -9
+        aligner.extend_left_deletion_score = +1
+        aligner.open_right_deletion_score = -1
+        aligner.extend_right_deletion_score = -2
         aligner.mode = "local"
         state = pickle.dumps(aligner)
         pickled_aligner = pickle.loads(state)
@@ -4243,51 +6002,51 @@ class TestAlignerPickling(unittest.TestCase):
         self.assertAlmostEqual(aligner.mismatch_score, pickled_aligner.mismatch_score)
         self.assertIsNone(pickled_aligner.substitution_matrix)
         self.assertAlmostEqual(
-            aligner.target_internal_open_gap_score,
-            pickled_aligner.target_internal_open_gap_score,
+            aligner.open_internal_insertion_score,
+            pickled_aligner.open_internal_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.target_internal_extend_gap_score,
-            pickled_aligner.target_internal_extend_gap_score,
+            aligner.extend_internal_insertion_score,
+            pickled_aligner.extend_internal_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.target_left_open_gap_score,
-            pickled_aligner.target_left_open_gap_score,
+            aligner.open_left_insertion_score,
+            pickled_aligner.open_left_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.target_left_extend_gap_score,
-            pickled_aligner.target_left_extend_gap_score,
+            aligner.extend_left_insertion_score,
+            pickled_aligner.extend_left_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.target_right_open_gap_score,
-            pickled_aligner.target_right_open_gap_score,
+            aligner.open_right_insertion_score,
+            pickled_aligner.open_right_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.target_right_extend_gap_score,
-            pickled_aligner.target_right_extend_gap_score,
+            aligner.extend_right_insertion_score,
+            pickled_aligner.extend_right_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.query_internal_open_gap_score,
-            pickled_aligner.query_internal_open_gap_score,
+            aligner.open_internal_deletion_score,
+            pickled_aligner.open_internal_deletion_score,
         )
         self.assertAlmostEqual(
-            aligner.query_internal_extend_gap_score,
-            pickled_aligner.query_internal_extend_gap_score,
+            aligner.extend_internal_deletion_score,
+            pickled_aligner.extend_internal_deletion_score,
         )
         self.assertAlmostEqual(
-            aligner.query_left_open_gap_score, pickled_aligner.query_left_open_gap_score
+            aligner.open_left_deletion_score, pickled_aligner.open_left_deletion_score
         )
         self.assertAlmostEqual(
-            aligner.query_left_extend_gap_score,
-            pickled_aligner.query_left_extend_gap_score,
+            aligner.extend_left_deletion_score,
+            pickled_aligner.extend_left_deletion_score,
         )
         self.assertAlmostEqual(
-            aligner.query_right_open_gap_score,
-            pickled_aligner.query_right_open_gap_score,
+            aligner.open_right_deletion_score,
+            pickled_aligner.open_right_deletion_score,
         )
         self.assertAlmostEqual(
-            aligner.query_right_extend_gap_score,
-            pickled_aligner.query_right_extend_gap_score,
+            aligner.extend_right_deletion_score,
+            pickled_aligner.extend_right_deletion_score,
         )
         self.assertEqual(aligner.mode, pickled_aligner.mode)
 
@@ -4301,18 +6060,18 @@ class TestAlignerPickling(unittest.TestCase):
         aligner = Align.PairwiseAligner()
         aligner.wildcard = "N"
         aligner.substitution_matrix = substitution_matrices.load("BLOSUM80")
-        aligner.target_internal_open_gap_score = -5
-        aligner.target_internal_extend_gap_score = -3
-        aligner.target_left_open_gap_score = -2
-        aligner.target_left_extend_gap_score = -3
-        aligner.target_right_open_gap_score = -4.5
-        aligner.target_right_extend_gap_score = -4.3
-        aligner.query_internal_open_gap_score = -2
-        aligner.query_internal_extend_gap_score = -2.5
-        aligner.query_left_open_gap_score = -9.1
-        aligner.query_left_extend_gap_score = +1.7
-        aligner.query_right_open_gap_score = -1.9
-        aligner.query_right_extend_gap_score = -2.0
+        aligner.open_internal_insertion_score = -5
+        aligner.extend_internal_insertion_score = -3
+        aligner.open_left_insertion_score = -2
+        aligner.extend_left_insertion_score = -3
+        aligner.open_right_insertion_score = -4.5
+        aligner.extend_right_insertion_score = -4.3
+        aligner.open_internal_deletion_score = -2
+        aligner.extend_internal_deletion_score = -2.5
+        aligner.open_left_deletion_score = -9.1
+        aligner.extend_left_deletion_score = +1.7
+        aligner.open_right_deletion_score = -1.9
+        aligner.extend_right_deletion_score = -2.0
         aligner.mode = "global"
         state = pickle.dumps(aligner)
         pickled_aligner = pickle.loads(state)
@@ -4327,51 +6086,51 @@ class TestAlignerPickling(unittest.TestCase):
             pickled_aligner.substitution_matrix.alphabet,
         )
         self.assertAlmostEqual(
-            aligner.target_internal_open_gap_score,
-            pickled_aligner.target_internal_open_gap_score,
+            aligner.open_internal_insertion_score,
+            pickled_aligner.open_internal_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.target_internal_extend_gap_score,
-            pickled_aligner.target_internal_extend_gap_score,
+            aligner.extend_internal_insertion_score,
+            pickled_aligner.extend_internal_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.target_left_open_gap_score,
-            pickled_aligner.target_left_open_gap_score,
+            aligner.open_left_insertion_score,
+            pickled_aligner.open_left_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.target_left_extend_gap_score,
-            pickled_aligner.target_left_extend_gap_score,
+            aligner.extend_left_insertion_score,
+            pickled_aligner.extend_left_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.target_right_open_gap_score,
-            pickled_aligner.target_right_open_gap_score,
+            aligner.open_right_insertion_score,
+            pickled_aligner.open_right_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.target_right_extend_gap_score,
-            pickled_aligner.target_right_extend_gap_score,
+            aligner.extend_right_insertion_score,
+            pickled_aligner.extend_right_insertion_score,
         )
         self.assertAlmostEqual(
-            aligner.query_internal_open_gap_score,
-            pickled_aligner.query_internal_open_gap_score,
+            aligner.open_internal_deletion_score,
+            pickled_aligner.open_internal_deletion_score,
         )
         self.assertAlmostEqual(
-            aligner.query_internal_extend_gap_score,
-            pickled_aligner.query_internal_extend_gap_score,
+            aligner.extend_internal_deletion_score,
+            pickled_aligner.extend_internal_deletion_score,
         )
         self.assertAlmostEqual(
-            aligner.query_left_open_gap_score, pickled_aligner.query_left_open_gap_score
+            aligner.open_left_deletion_score, pickled_aligner.open_left_deletion_score
         )
         self.assertAlmostEqual(
-            aligner.query_left_extend_gap_score,
-            pickled_aligner.query_left_extend_gap_score,
+            aligner.extend_left_deletion_score,
+            pickled_aligner.extend_left_deletion_score,
         )
         self.assertAlmostEqual(
-            aligner.query_right_open_gap_score,
-            pickled_aligner.query_right_open_gap_score,
+            aligner.open_right_deletion_score,
+            pickled_aligner.open_right_deletion_score,
         )
         self.assertAlmostEqual(
-            aligner.query_right_extend_gap_score,
-            pickled_aligner.query_right_extend_gap_score,
+            aligner.extend_right_deletion_score,
+            pickled_aligner.extend_right_deletion_score,
         )
         self.assertEqual(aligner.mode, pickled_aligner.mode)
 
@@ -4381,12 +6140,17 @@ class TestAlignmentFormat(unittest.TestCase):
         chromosome = "ACGATCAGCGAGCATNGAGCACTACGACAGCGAGTGACCACTATTCGCGATCAGGAGCAGATACTTTACGAGCATCGGC"
         transcript = "AGCATCGAGCGACTTGAGTACTATTCATACTTTCGAGC"
         aligner = Align.PairwiseAligner()
-        aligner.query_extend_gap_score = 0
-        aligner.query_open_gap_score = -3
-        aligner.target_gap_score = -3
+        aligner.extend_deletion_score = 0
+        aligner.open_deletion_score = -3
+        aligner.insertion_score = -3
         aligner.end_gap_score = 0
         aligner.mismatch = -1
         alignments = aligner.align(chromosome, transcript)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=19) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 19.0)
@@ -4423,6 +6187,11 @@ query	0	target	1	255	10D10M1I3M11D12M14D7M1D5M6D	*	0	0	AGCATCGAGCGACTTGAGTACTATT
         )
         alignments = aligner.align(
             chromosome, reverse_complement(transcript), strand="-"
+        )
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=19) at {hex(id(alignments))}>""",
         )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
@@ -4465,6 +6234,11 @@ query	16	target	1	255	10D10M1I3M11D12M14D7M1D5M6D	*	0	0	AGCATCGAGCGACTTGAGTACTAT
         aligner.end_gap_score = 0
         aligner.mismatch = -10
         alignments = aligner.align("ACGTAGCATCAGC", "CCCCACGTAGCATCAGC")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         self.assertAlmostEqual(alignments.score, 13.0)
         alignment = alignments[0]
@@ -4498,6 +6272,11 @@ query	0	target	1	255	4I13M	*	0	0	CCCCACGTAGCATCAGC	*	AS:i:13
         alignments = aligner.align(
             "ACGTAGCATCAGC", reverse_complement("CCCCACGTAGCATCAGC"), strand="-"
         )
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         self.assertAlmostEqual(alignments.score, 13.0)
         alignment = alignments[0]
@@ -4529,6 +6308,11 @@ query	16	target	1	255	4I13M	*	0	0	CCCCACGTAGCATCAGC	*	AS:i:13
 """,
         )
         alignments = aligner.align("CCCCACGTAGCATCAGC", "ACGTAGCATCAGC")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 13.0)
@@ -4562,6 +6346,11 @@ query	0	target	1	255	4D13M	*	0	0	ACGTAGCATCAGC	*	AS:i:13
         alignments = aligner.align(
             "CCCCACGTAGCATCAGC", reverse_complement("ACGTAGCATCAGC"), strand="-"
         )
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 13.0)
@@ -4593,6 +6382,11 @@ query	16	target	1	255	4D13M	*	0	0	ACGTAGCATCAGC	*	AS:i:13
 """,
         )
         alignments = aligner.align("ACGTAGCATCAGC", "ACGTAGCATCAGCGGGG")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -4625,6 +6419,11 @@ query	0	target	1	255	13M4I	*	0	0	ACGTAGCATCAGCGGGG	*	AS:i:13
         alignments = aligner.align(
             "ACGTAGCATCAGC", reverse_complement("ACGTAGCATCAGCGGGG"), strand="-"
         )
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -4655,6 +6454,11 @@ query	16	target	1	255	13M4I	*	0	0	ACGTAGCATCAGCGGGG	*	AS:i:13
 """,
         )
         alignments = aligner.align("ACGTAGCATCAGCGGGG", "ACGTAGCATCAGC")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertAlmostEqual(alignment.score, 13.0)
@@ -4687,6 +6491,11 @@ query	0	target	1	255	13M4D	*	0	0	ACGTAGCATCAGC	*	AS:i:13
         )
         alignments = aligner.align(
             "ACGTAGCATCAGCGGGG", reverse_complement("ACGTAGCATCAGC"), strand="-"
+        )
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
         )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
@@ -4731,6 +6540,11 @@ query	16	target	1	255	13M4D	*	0	0	ACGTAGCATCAGC	*	AS:i:13
         # use strings for target and query
         alignments = aligner.align(target, query)
         self.assertEqual(len(alignments), 1)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         alignment = alignments[0]
         self.assertEqual(
             str(alignment),
@@ -4741,6 +6555,14 @@ query             0 ACGATCGAGCNGCTACG 17
 """,
         )
         self.assertEqual(alignment.shape, (2, 17))
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 2)
+        counts = alignment.counts(wildcard="N")
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 1)
         self.assertEqual(
             alignment.format("psl"),
             """\
@@ -4760,6 +6582,11 @@ query	0	target	7	255	17M5S	*	0	0	ACGATCGAGCNGCTACGCCCNC	*	AS:i:13
 """,
         )
         alignments = aligner.align(target, reverse_complement(query), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -4771,6 +6598,14 @@ query            22 ACGATCGAGCNGCTACG  5
 """,
         )
         self.assertEqual(alignment.shape, (2, 17))
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 2)
+        counts = alignment.counts(wildcard="N")
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 1)
         self.assertEqual(
             alignment.format("psl"),
             """\
@@ -4791,6 +6626,11 @@ query	16	target	7	255	17M5S	*	0	0	ACGATCGAGCNGCTACGCCCNC	*	AS:i:13
         )
         # use Seq objects for target and query
         alignments = aligner.align(Seq(target), Seq(query))
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -4802,6 +6642,14 @@ query             0 ACGATCGAGCNGCTACG 17
 """,
         )
         self.assertEqual(alignment.shape, (2, 17))
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 2)
+        counts = alignment.counts(wildcard="N")
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 1)
         self.assertEqual(
             alignment.format("psl"),
             """\
@@ -4823,6 +6671,11 @@ query	0	target	7	255	17M5S	*	0	0	ACGATCGAGCNGCTACGCCCNC	*	AS:i:13
         alignments = aligner.align(
             Seq(target), Seq(query).reverse_complement(), strand="-"
         )
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -4833,6 +6686,14 @@ target            6 ACGCTCGAGCAGCTACG 23
 query            22 ACGATCGAGCNGCTACG  5
 """,
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 2)
+        counts = alignment.counts(wildcard="N")
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 1)
         self.assertEqual(alignment.shape, (2, 17))
         self.assertEqual(
             alignment.format("psl"),
@@ -4857,6 +6718,11 @@ query	16	target	7	255	17M5S	*	0	0	ACGATCGAGCNGCTACGCCCNC	*	AS:i:13
         aligner.end_gap_score = 0
         # use strings for target and query
         alignments = aligner.align(target, query)
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -4867,6 +6733,14 @@ target            0 TTTTTNACGCTCGAGCAGCTACG----- 23
 query             0 ------ACGATCGAGCNGCTACGCCCNC 22
 """,
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 2)
+        counts = alignment.counts(wildcard="N")
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 1)
         self.assertEqual(alignment.shape, (2, 28))
         self.assertEqual(
             alignment.format("psl"),
@@ -4887,6 +6761,11 @@ query	0	target	1	255	6D17M5I	*	0	0	ACGATCGAGCNGCTACGCCCNC	*	AS:i:13
 """,
         )
         alignments = aligner.align(target, reverse_complement(query), strand="-")
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -4897,6 +6776,14 @@ target            0 TTTTTNACGCTCGAGCAGCTACG----- 23
 query            22 ------ACGATCGAGCNGCTACGCCCNC  0
 """,
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 2)
+        counts = alignment.counts(wildcard="N")
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 1)
         self.assertEqual(alignment.shape, (2, 28))
         self.assertEqual(
             alignment.format("psl"),
@@ -4918,6 +6805,11 @@ query	16	target	1	255	6D17M5I	*	0	0	ACGATCGAGCNGCTACGCCCNC	*	AS:i:13
         )
         # use Seq objects for target and query
         alignments = aligner.align(Seq(target), Seq(query))
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -4928,6 +6820,14 @@ target            0 TTTTTNACGCTCGAGCAGCTACG----- 23
 query             0 ------ACGATCGAGCNGCTACGCCCNC 22
 """,
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 2)
+        counts = alignment.counts(wildcard="N")
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 1)
         self.assertEqual(alignment.shape, (2, 28))
         self.assertEqual(
             alignment.format("psl"),
@@ -4950,6 +6850,11 @@ query	0	target	1	255	6D17M5I	*	0	0	ACGATCGAGCNGCTACGCCCNC	*	AS:i:13
         alignments = aligner.align(
             Seq(target), Seq(query).reverse_complement(), strand="-"
         )
+        self.assertEqual(
+            repr(alignments),
+            f"""\
+<PairwiseAlignments object (1 alignment; score=13) at {hex(id(alignments))}>""",
+        )
         self.assertEqual(len(alignments), 1)
         alignment = alignments[0]
         self.assertEqual(
@@ -4960,6 +6865,14 @@ target            0 TTTTTNACGCTCGAGCAGCTACG----- 23
 query            22 ------ACGATCGAGCNGCTACGCCCNC  0
 """,
         )
+        counts = alignment.counts()
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 2)
+        counts = alignment.counts(wildcard="N")
+        self.assertEqual(counts.aligned, 17)
+        self.assertEqual(counts.identities, 15)
+        self.assertEqual(counts.mismatches, 1)
         self.assertEqual(alignment.shape, (2, 28))
         self.assertEqual(
             alignment.format("psl"),
@@ -4979,6 +6892,20 @@ target	6	23	query	13	-	6	23	0	1	17,	0,
 query	16	target	1	255	6D17M5I	*	0	0	ACGATCGAGCNGCTACGCCCNC	*	AS:i:13
 """,
         )
+
+
+class TestAlgorithmRestrictions(unittest.TestCase):
+    def test_fogsaa_restrictions(self):
+        aligner = Align.PairwiseAligner(mode="fogsaa")
+        aligner.match_score = -1
+        with self.assertWarns(BiopythonWarning):
+            aligner.score("AAAAAAAAAAAA", "AAAAATAAAAAA")
+        aligner.mismatch_score = 1
+        with self.assertWarns(BiopythonWarning):
+            aligner.score("AAAAAAAAAAAA", "AAAAATAAAAAA")
+        aligner.gap_score = 1
+        with self.assertWarns(BiopythonWarning):
+            aligner.score("AAAAAAAAAAAA", "AAAAATAAAAAA")
 
 
 if __name__ == "__main__":

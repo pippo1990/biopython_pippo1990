@@ -11,7 +11,7 @@
 import unittest
 
 try:
-    import numpy  # noqa F401
+    import numpy as np  # noqa F401
 except ImportError:
     from Bio import MissingPythonDependencyError
 
@@ -20,7 +20,8 @@ except ImportError:
     ) from None
 
 from Bio.PDB import PDBParser
-from Bio.PDB.parse_pdb_header import parse_pdb_header, _parse_remark_465
+from Bio.PDB.parse_pdb_header import _parse_remark_465
+from Bio.PDB.parse_pdb_header import parse_pdb_header
 
 
 class ParseReal(unittest.TestCase):

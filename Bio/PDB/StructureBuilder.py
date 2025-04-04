@@ -8,19 +8,22 @@
 This is used by the PDBParser and MMCIFparser classes.
 """
 
-from typing import Optional
-import numpy as np
 import warnings
+from typing import Optional
+
+import numpy as np
+
+from Bio.PDB.Atom import Atom
+from Bio.PDB.Atom import DisorderedAtom
+from Bio.PDB.Chain import Chain
+from Bio.PDB.Model import Model
+from Bio.PDB.PDBExceptions import PDBConstructionException
+from Bio.PDB.PDBExceptions import PDBConstructionWarning
+from Bio.PDB.Residue import DisorderedResidue
+from Bio.PDB.Residue import Residue
 
 # SMCRA hierarchy
 from Bio.PDB.Structure import Structure
-from Bio.PDB.Model import Model
-from Bio.PDB.Chain import Chain
-from Bio.PDB.Residue import Residue, DisorderedResidue
-from Bio.PDB.Atom import Atom, DisorderedAtom
-
-from Bio.PDB.PDBExceptions import PDBConstructionException
-from Bio.PDB.PDBExceptions import PDBConstructionWarning
 
 
 def _is_completely_disordered(residue: Residue) -> bool:
@@ -76,7 +79,7 @@ class StructureBuilder:
         """
         self.structure = Structure(structure_id)
 
-    def init_model(self, model_id: int, serial_num: Optional[int] = None):
+    def init_model(self, model_id: int, serial_num: int | None = None):
         """Create a new Model object with given id.
 
         Arguments:
@@ -169,8 +172,8 @@ class StructureBuilder:
                         # if this exception is ignored, a residue will be missing
                         self.residue = None
                         raise PDBConstructionException(
-                            "Blank altlocs in duplicate residue %s ('%s', %i, '%s')"
-                            % (resname, field, resseq, icode)
+                            "Blank altlocs in duplicate residue %s ('%s', %i, '%s') of chain '%s'"
+                            % (resname, field, resseq, icode, self.chain.id)
                         )
                     self.chain.detach_child(res_id)
                     new_residue = Residue(res_id, resname, self.segid)
@@ -187,14 +190,14 @@ class StructureBuilder:
         self,
         name: str,
         coord: np.ndarray,
-        b_factor: float,
-        occupancy: float,
+        b_factor: float | None,
+        occupancy: float | None,
         altloc: str,
         fullname: str,
         serial_number=None,
-        element: Optional[str] = None,
-        pqr_charge: Optional[float] = None,
-        radius: Optional[float] = None,
+        element: str | None = None,
+        pqr_charge: float | None = None,
+        radius: float | None = None,
         is_pqr: bool = False,
     ):
         """Create a new Atom object.

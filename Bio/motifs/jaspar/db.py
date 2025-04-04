@@ -56,6 +56,7 @@ appropriate::
 """
 
 import warnings
+
 from Bio import BiopythonWarning
 from Bio import MissingPythonDependencyError
 
@@ -66,8 +67,8 @@ except ImportError:
         "Install MySQLdb if you want to use Bio.motifs.jaspar.db"
     )
 
-from Bio.motifs import jaspar, matrix
-
+from Bio.motifs import jaspar
+from Bio.motifs import matrix
 
 JASPAR_DFLT_COLLECTION = "CORE"
 
@@ -101,7 +102,7 @@ class JASPAR5:
         self.dbh = mdb.connect(host, user, password, name)
 
     def __str__(self):
-        """Return a string represention of the JASPAR5 DB connection."""
+        """Return a string representation of the JASPAR5 DB connection."""
         return rf"{self.user}\@{self.host}:{self.name}"
 
     def fetch_motif_by_id(self, id):
@@ -427,7 +428,7 @@ class JASPAR5:
             elif attr == "comment":
                 motif.comment = val
             else:
-                # TODO If we were to implement additional abitrary tags
+                # TODO If we were to implement additional arbitrary tags
                 # motif.tag(attr, val)
                 pass
 

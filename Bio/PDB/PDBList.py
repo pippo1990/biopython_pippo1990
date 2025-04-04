@@ -44,7 +44,7 @@ import re
 import shutil
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Optional, Tuple
+from typing import Optional
 from urllib.request import Request
 from urllib.request import urlcleanup
 from urllib.request import urlopen
@@ -410,12 +410,12 @@ class PDBList:
 
     def download_pdb_files(
         self,
-        pdb_codes: List[str],
+        pdb_codes: list[str],
         obsolete: bool = False,
-        pdir: Optional[str] = None,
-        file_format: Optional[str] = None,
+        pdir: str | None = None,
+        file_format: str | None = None,
         overwrite: bool = False,
-        max_num_threads: Optional[int] = None,
+        max_num_threads: int | None = None,
     ):
         """Fetch set of PDB structure files from the PDB server and store them locally.
 
@@ -456,7 +456,7 @@ class PDBList:
                 pdb_codes,
             )
 
-    def get_all_assemblies(self, file_format: str = "") -> List[Tuple[str, str]]:
+    def get_all_assemblies(self, file_format: str = "") -> list[tuple[str, str]]:
         """Retrieve the list of PDB entries with an associated bio assembly.
 
         The requested list will be cached to avoid multiple calls to the server.
@@ -489,7 +489,7 @@ class PDBList:
             assemblies = json.loads(response.read().decode("utf-8"))["result_set"]
 
         # We transform the assemblies to match the format that they have historically been returned in.
-        def transform(assembly: dict) -> Tuple[str, str]:
+        def transform(assembly: dict) -> tuple[str, str]:
             split = assembly["identifier"].split("-")
             return split[0].lower(), split[-1]
 
@@ -576,9 +576,9 @@ class PDBList:
 
     def download_all_assemblies(
         self,
-        listfile: Optional[str] = None,
-        file_format: Optional[str] = None,
-        max_num_threads: Optional[int] = None,
+        listfile: str | None = None,
+        file_format: str | None = None,
+        max_num_threads: int | None = None,
     ):
         """Retrieve all biological assemblies not in the local PDB copy.
 
@@ -608,9 +608,9 @@ class PDBList:
 
     def download_entire_pdb(
         self,
-        listfile: Optional[str] = None,
-        file_format: Optional[str] = None,
-        max_num_threads: Optional[int] = None,
+        listfile: str | None = None,
+        file_format: str | None = None,
+        max_num_threads: int | None = None,
     ):
         """Retrieve all PDB entries not present in the local PDB copy.
 
@@ -643,9 +643,9 @@ class PDBList:
 
     def download_obsolete_entries(
         self,
-        listfile: Optional[str] = None,
-        file_format: Optional[str] = None,
-        max_num_threads: Optional[int] = None,
+        listfile: str | None = None,
+        file_format: str | None = None,
+        max_num_threads: int | None = None,
     ):
         """Retrieve all obsolete PDB entries not present in local obsolete PDB copy.
 

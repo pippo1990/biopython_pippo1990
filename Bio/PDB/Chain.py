@@ -7,10 +7,11 @@
 
 """Chain class, used in Structure objects."""
 
+from typing import Optional
+from typing import TYPE_CHECKING
+
 from Bio.PDB.Entity import Entity
 from Bio.PDB.internal_coords import IC_Chain
-
-from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from Bio.PDB.Model import Model
@@ -194,8 +195,8 @@ class Chain(Entity["Model", "Residue"]):
     def internal_to_atom_coordinates(
         self,
         verbose: bool = False,
-        start: Optional[int] = None,
-        fin: Optional[int] = None,
+        start: int | None = None,
+        fin: int | None = None,
     ):
         """Create/update atom coordinates from internal coordinates.
 

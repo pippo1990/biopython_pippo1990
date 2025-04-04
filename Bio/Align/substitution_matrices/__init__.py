@@ -9,6 +9,7 @@
 
 import os
 import string
+
 import numpy as np
 
 from Bio.File import as_handle
@@ -161,6 +162,8 @@ class Array(np.ndarray):
         elif value.ndim == 1:
             if value.shape[0] != self.shape[0]:
                 value._alphabet = self.alphabet[key]
+        elif value.ndim == 0:
+            return value.item()
         return value.view(Array)
 
     def __setitem__(self, key, value):
@@ -262,11 +265,6 @@ class Array(np.ndarray):
         """Return the alphabet property."""
         return self._alphabet
 
-    def copy(self):
-        """Create and return a copy of the array."""
-        other = Array(alphabet=self._alphabet, data=self)
-        return other
-
     def get(self, key, value=None):
         """Return the value of the key if found; return value otherwise."""
         try:
@@ -275,7 +273,7 @@ class Array(np.ndarray):
             return value
 
     def items(self):
-        """Return an iterator  of (key, value) pairs in the array."""
+        """Return an iterator of (key, value) pairs in the array."""
         dims = len(self.shape)
         if dims == 1:
             for index, key in enumerate(self._alphabet):
@@ -486,7 +484,8 @@ def read(handle, dtype=float):
             alphabet = "".join(alphabet)
         matrix = Array(alphabet=alphabet, dims=2, dtype=dtype)
         for letter1, row in zip(alphabet, rows):
-            assert letter1 == row.pop(0)
+            letter = row.pop(0)
+            assert letter1 == letter
             for letter2, word in zip(alphabet, row):
                 matrix[letter1, letter2] = float(word)
     matrix.header = header

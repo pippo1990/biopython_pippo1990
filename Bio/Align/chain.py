@@ -21,7 +21,6 @@ positions (like Python) and aligning region sizes.
 
 import numpy as np
 
-
 from Bio.Align import Alignment
 from Bio.Align import interfaces
 from Bio.Seq import Seq
@@ -173,16 +172,13 @@ class AlignmentIterator(interfaces.AlignmentIterator):
     fmt = "chain"
 
     def _read_header(self, stream):
-        try:
-            self._line = next(stream)
-        except StopIteration:
-            self._line = None
+        self._line = stream.readline()
 
     def _read_next_alignment(self, stream):
-        if self._line is None:
+        if not self._line:
             return
         line = self._line
-        self._line = None
+        self._line = ""
         words = line.split()
         if len(words) == 12:
             chainID = None
@@ -260,11 +256,8 @@ class AlignmentIterator(interfaces.AlignmentIterator):
         # There is supposed to be a blank line between chain blocks, but some
         # tools (e.g. pslToChain) do not include such a blank line in their
         # output.
-        try:
-            line = next(stream)
-            if line.strip() == "":
-                line = next(stream)
-            self._line = line
-        except StopIteration:
-            self._line = None
+        line = stream.readline()
+        if not line.strip():
+            line = stream.readline()
+        self._line = line
         return alignment

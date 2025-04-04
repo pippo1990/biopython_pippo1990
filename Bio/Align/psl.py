@@ -27,14 +27,19 @@ zero-based end position. We can therefore manipulate ``start`` and
 """
 
 from itertools import chain
-import numpy as np
 
+import numpy as np
 
 from Bio.Align import Alignment
 from Bio.Align import interfaces
-from Bio.Seq import Seq, reverse_complement, UndefinedSequenceError
+from Bio.Seq import reverse_complement
+from Bio.Seq import Seq
+from Bio.Seq import UndefinedSequenceError
+from Bio.SeqFeature import CompoundLocation
+from Bio.SeqFeature import ExactPosition
+from Bio.SeqFeature import SeqFeature
+from Bio.SeqFeature import SimpleLocation
 from Bio.SeqRecord import SeqRecord
-from Bio.SeqFeature import SeqFeature, ExactPosition, SimpleLocation, CompoundLocation
 
 
 class AlignmentWriter(interfaces.AlignmentWriter):
@@ -313,16 +318,16 @@ class AlignmentIterator(interfaces.AlignmentIterator):
     fmt = "PSL"
 
     def _read_header(self, stream):
-        line = next(stream)
+        line = stream.readline()
         if line.startswith("psLayout "):
             words = line.split()
             if words[1] != "version":
                 raise ValueError("Unexpected word '%s' in header line" % words[1])
             self.metadata = {"psLayout version": words[2]}
-            line = next(stream)
-            line = next(stream)
-            line = next(stream)
-            line = next(stream)
+            line = stream.readline()
+            line = stream.readline()
+            line = stream.readline()
+            line = stream.readline()
             if line.lstrip("-").strip() != "":
                 raise ValueError("End of header not found")
         else:

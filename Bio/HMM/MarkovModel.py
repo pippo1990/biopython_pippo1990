@@ -7,15 +7,14 @@
 
 """Deal with representations of Markov Models."""
 
-# standard modules
 import copy
 import math
 import random
-from collections import defaultdict
 import warnings
+from collections import defaultdict
 
-from Bio.Seq import Seq
 from Bio import BiopythonDeprecationWarning
+from Bio.Seq import Seq
 
 warnings.warn(
     "The 'Bio.HMM.MarkovModule' module is deprecated and will be "
@@ -527,12 +526,12 @@ class HiddenMarkovModel:
         return self._transition_pseudo
 
     def get_blank_emissions(self):
-        """Get the starting default emmissions for each sequence.
+        """Get the starting default emissions for each sequence.
 
-        This returns a dictionary of the default emmissions for each
+        This returns a dictionary of the default emissions for each
         letter. The dictionary is structured with keys as
-        (seq_letter, emmission_letter) and values as the starting number
-        of emmissions.
+        (seq_letter, emission_letter) and values as the starting number
+        of emissions.
         """
         return self._emission_pseudo
 

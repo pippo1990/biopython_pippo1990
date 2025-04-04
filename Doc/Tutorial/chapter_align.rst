@@ -126,14 +126,14 @@ Print the ``Alignment`` object to show the alignment explicitly:
 with the starting and end coordinate for each sequence are shown to the
 left and right, respectively, of the alignment.
 
-.. _`subsec:align_infer_coordinates`:
+.. _`subsec:align_parse_printed_alignment`:
 
 Creating an Alignment object from aligned sequences
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you start out with the aligned sequences, with dashes representing
 gaps, then you can calculate the coordinates using the
-``infer_coordinates`` class method. This method is primarily employed in
+``parse_printed_alignment`` class method. This method is primarily employed in
 Biopython’s alignment parsers (see
 Section :ref:`sec:alignmentparsers`), but it may be useful for other
 purposes. For example, you can construct the ``Alignment`` object from
@@ -143,17 +143,26 @@ aligned sequences as follows:
 
 .. code:: pycon
 
-   >>> aligned_sequences = ["CGGTTTTT", "AG-TTT--", "AGGTTT--"]
-   >>> sequences = [aligned_sequence.replace("-", "")
-   ...              for aligned_sequence in aligned_sequences]  # fmt: skip
+   >>> lines = ["CGGTTTTT", "AG-TTT--", "AGGTTT--"]
+   >>> for line in lines:
+   ...     print(line)
    ...
+   CGGTTTTT
+   AG-TTT--
+   AGGTTT--
+   >>> lines = [line.encode() for line in lines]  # convert to bytes
+   >>> lines
+   [b'CGGTTTTT', b'AG-TTT--', b'AGGTTT--']
+   >>> sequences, coordinates = Alignment.parse_printed_alignment(lines)
+   >>> sequences
+   [b'CGGTTTTT', b'AGTTT', b'AGGTTT']
+   >>> sequences = [sequence.decode() for sequence in sequences]
    >>> sequences
    ['CGGTTTTT', 'AGTTT', 'AGGTTT']
-   >>> coordinates = Alignment.infer_coordinates(aligned_sequences)
-   >>> coordinates
-   array([[0, 2, 3, 6, 8],
-          [0, 2, 2, 5, 5],
-          [0, 2, 3, 6, 6]])
+   >>> print(coordinates)
+   [[0 2 3 6 8]
+    [0 2 2 5 5]
+    [0 2 3 6 6]]
 
 The initial ``G`` nucleotide of ``seqA`` and the final ``CC``
 nucleotides of ``seqB`` were not included in the alignment and is
@@ -163,15 +172,16 @@ therefore missing here. But this is easy to fix:
 
 .. code:: pycon
 
+   >>> from Bio.Seq import Seq
    >>> sequences[0] = "C" + sequences[0]
    >>> sequences[1] = sequences[1] + "AA"
    >>> sequences
    ['CCGGTTTTT', 'AGTTTAA', 'AGGTTT']
    >>> coordinates[0, :] += 1
-   >>> coordinates
-   array([[1, 3, 4, 7, 9],
-          [0, 2, 2, 5, 5],
-          [0, 2, 3, 6, 6]])
+   >>> print(coordinates)
+   [[1 3 4 7 9]
+    [0 2 2 5 5]
+    [0 2 3 6 6]]
 
 Now we can create the ``Alignment`` object:
 
@@ -203,10 +213,10 @@ initializer will fill in the ``coordinates`` attribute of the
    >>> ungapped_alignment = Alignment(["ACGTACGT", "AAGTACGT", "ACGTACCT"])
    >>> ungapped_alignment  # doctest: +ELLIPSIS
    <Alignment object (3 rows x 8 columns) at ...>
-   >>> ungapped_alignment.coordinates
-   array([[0, 8],
-          [0, 8],
-          [0, 8]])
+   >>> print(ungapped_alignment.coordinates)
+   [[0 8]
+    [0 8]
+    [0 8]]
    >>> print(ungapped_alignment)
                      0 ACGTACGT 8
                      0 AAGTACGT 8
@@ -267,6 +277,8 @@ The following attributes are commonly found on ``Alignment`` objects:
 An ``Alignment`` object created by the parser in ``Bio.Align`` may have
 additional attributes, depending on the alignment file format from which
 the alignment was read.
+
+.. _`subsec:slicing-indexing-alignment`:
 
 Slicing and indexing an alignment
 ---------------------------------
@@ -358,7 +370,7 @@ object including only sequences ``[i:j:k]`` of the alignment:
 
 .. code:: pycon
 
-   >>> alignment[1:]  # doctest:+ELLIPSIS
+   >>> alignment[1:]
    <Alignment object (2 rows x 6 columns) at ...>
    >>> print(alignment[1:])
    target            0 AG-TTT 5
@@ -376,7 +388,7 @@ Extracting the first 4 columns for the example alignment above gives:
 
 .. code:: pycon
 
-   >>> alignment[:, :4]  # doctest:+ELLIPSIS
+   >>> alignment[:, :4]
    <Alignment object (3 rows x 4 columns) at ...>
    >>> print(alignment[:, :4])
                      1 CGGT 5
@@ -390,7 +402,7 @@ Similarly, extracting the last 6 columns gives:
 
 .. code:: pycon
 
-   >>> alignment[:, -6:]  # doctest:+ELLIPSIS
+   >>> alignment[:, -6:]
    <Alignment object (3 rows x 6 columns) at ...>
    >>> print(alignment[:, -6:])
                      3 GTTTTT 9
@@ -489,12 +501,12 @@ For example,
                      0 .|-|||-- 8
    query             0 AG-TTT-- 5
    <BLANKLINE>
-   >>> pairwise_alignment.aligned
-   array([[[1, 3],
-           [4, 7]],
+   >>> print(pairwise_alignment.aligned)
+   [[[1 3]
+     [4 7]]
    <BLANKLINE>
-          [[0, 2],
-           [2, 5]]])
+    [[0 2]
+     [2 5]]]
 
 Note that different alignments may have the same subsequences aligned to
 each other. In particular, this may occur if alignments differ from each
@@ -566,18 +578,15 @@ alignment are indicated by -1:
     array([ 0,  1,  3,  4,  5, -1, -1]),
     array([0, 1, 2, 3, 4, 5])]
 
+.. _`paragraph:alignment_counts`:
+
 Counting identities, mismatches, and gaps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``counts`` method calculates the number of identities, mismatches,
-and gaps of a pairwise alignment. For an alignment of more than two
-sequences, the number of identities, mismatches, and gaps are calculated
-and summed for all pairs of sequences in the alignment. The three
-numbers are returned as an ``AlignmentCounts`` object, which is a
-``namedtuple`` with fields ``gaps``, ``identities``, and ``mismatches``.
-This method currently takes no arguments, but in the future will likely
-be modified to accept optional arguments allowing its behavior to be
-customized.
+The ``counts`` method counts the number of identities, mismatches, aligned
+letters, and agaps (insertions and deletions) of an alignment.  The return
+value is an ``AlignmentCounts`` object, from which the counts can be obtained
+as properties.
 
 .. cont-doctest
 
@@ -588,15 +597,154 @@ customized.
                      0 .|-|||-- 8
    query             0 AG-TTT-- 5
    <BLANKLINE>
-   >>> pairwise_alignment.counts()
-   AlignmentCounts(gaps=3, identities=4, mismatches=1)
+   >>> counts = pairwise_alignment.counts()
+   >>> counts.aligned
+   5
+   >>> counts.identities
+   4
+   >>> counts.mismatches
+   1
+   >>> counts.gaps
+   3
+   >>> counts.insertions
+   0
+   >>> counts.deletions
+   3
+   >>> counts.internal_deletions
+   1
+   >>> counts.right_deletions
+   2
+
+Use the ``wildcard`` argument to specify a letter that should be ignored when
+counting identities, positives, and mismatches (e.g. ``wildcard="?"`` or
+``wildcard="N"`` are common choices).
+
+For an alignment of more than two sequences, the number of identities,
+mismatches, and gaps are calculated and summed for all pairs of sequences in
+the alignment.
+
+.. cont-doctest
+
+.. code:: pycon
+
    >>> print(alignment)
                      1 CGGTTTTT 9
                      0 AG-TTT-- 5
                      0 AGGTTT-- 6
    <BLANKLINE>
-   >>> alignment.counts()
-   AlignmentCounts(gaps=8, identities=14, mismatches=2)
+   >>> counts = alignment.counts()
+   >>> counts.aligned
+   16
+   >>> counts.identities
+   14
+   >>> counts.mismatches
+   2
+   >>> counts.insertions
+   1
+   >>> counts.deletions
+   5
+
+Here, insertions are defined as sequence insertions of a later sequence into an
+earlier sequence in the alignment. In contrast to the pairwise alignment above,
+the distinction between insertions and deletions may not be meaningful for a
+multiple sequence alignment, and you will probably be more interested in the
+number of gaps (= insertions + deletions):
+
+.. cont-doctest
+
+.. code:: pycon
+
+   >>> counts.gaps
+   6
+   >>> counts.left_gaps
+   0
+   >>> counts.right_gaps
+   4
+   >>> counts.internal_gaps
+   2
+
+To speed up the calculation, you can use ``ignore_sequences=True`` to skip
+counting the number of matches and mismatches (this will still calculate the
+number of aligned sequences):
+
+.. cont-doctest
+
+.. code:: pycon
+
+   >>> counts = alignment.counts(ignore_sequences=True)
+   >>> counts.aligned
+   16
+   >>> print(counts.identities)
+   None
+   >>> print(counts.mismatches)
+   None
+   >>> counts.insertions
+   1
+   >>> counts.deletions
+   5
+
+For protein alignments, in addition to the number of identities and mismatches,
+you can also count the number of positive matches by supplying a substitution
+matrix (see Chapter :ref:`sec:substitution_matrices`):
+
+.. cont-doctest
+
+.. code:: pycon
+
+   >>> from Bio.Align import substitution_matrices
+   >>> substitution_matrix = substitution_matrices.load("BLOSUM62")
+   >>> protein_alignment = Alignment(["GQCGSCWSFS", "GACGSCWTFS"])
+   >>> print(protein_alignment)
+   target            0 GQCGSCWSFS 10
+                     0 |.|||||.|| 10
+   query             0 GACGSCWTFS 10
+   <BLANKLINE>
+   >>> counts = protein_alignment.counts(substitution_matrix)
+   >>> counts.aligned
+   10
+   >>> counts.identities
+   8
+   >>> counts.mismatches
+   2
+   >>> counts.positives
+   9
+
+where the number of positives is one higher than the number of identities
+because the mismatch of S against T has a positive score (while the mismatch
+score of Q against A is not positive):
+
+.. cont-doctest
+
+.. code:: pycon
+
+   >>> substitution_matrix["S", "T"]
+   1.0
+   >>> substitution_matrix["Q", "A"]
+   -1.0
+
+An ``AlignmentCounts`` object has the following properties:
+
+========================= =============================================================================================================
+**property**              **description**
+========================= =============================================================================================================
+``aligned``               The number of aligned letters in the alignment. This quantity is also calculated if some or all of the sequences are undefined. If all sequences are known, then ``aligned`` = ``identities`` + ``mismatches``. If some sequences are undefined, then ``aligned`` > ``identities`` + ``mismatches``.
+``identities``            The number of identical letters in the alignment
+``mismatches``            The number of mismatched letters in the alignment
+``positives``             The number of aligned letters with a positive score
+``left_insertions``       The number of insertions on the left side of the alignment
+``left_deletions``        The number of deletions on the left side of the alignment
+``right_insertions``      The number of insertions on the right side of the alignment
+``right_deletions``       The number of deletions on the right side of the alignment
+``internal_insertions``   The number of insertions in the interior of the alignment
+``internal_deletions``    The number of deletions in the interior of the alignment
+``insertions``            The total number of insertions, equal to ``left_insertions`` + ``right_insertions`` + ``internal_insertions``
+``deletions``             The total number of deletions, equal to ``left_deletions`` + ``right_deletions`` + ``internal_deletions``
+``left_gaps``             The number of gaps on the left side of the alignment, equal to ``left_insertions`` + ``left_deletions``
+``right_gaps``            The number of gaps on the right side of the alignment, equal to ``right_insertions`` + ``right_deletions``
+``internal_gaps``         The number of gaps in the interior of the alignment, equal to ``internal_insertions`` + ``internal_deletions``
+``gaps``                  The total number of gaps in the alignment, equal to ``left_gaps`` + ``right_gaps`` + ``internal_gaps``
+========================= =============================================================================================================
+
 
 Letter frequencies
 ~~~~~~~~~~~~~~~~~~
@@ -706,11 +854,16 @@ string) characters by using ``dtype='U'``:
 .. code:: pycon
 
    >>> align_array = np.array(alignment, dtype="U")
+
+.. code:: pycon
+
    >>> align_array  # doctest: +NORMALIZE_WHITESPACE
    array([['C', 'G', 'G', 'T', 'T', 'T', 'T', 'T'],
           ['A', 'G', '-', 'T', 'T', 'T', '-', '-'],
           ['A', 'G', 'G', 'T', 'T', 'T', '-', '-']], dtype='<U1')
 
+(the printed ``dtype`` will be '<U1' or '>U1' depending on whether your system
+is little-endian or big-endian, respectively).
 Note that the ``alignment`` object and the NumPy array ``align_array``
 are separate objects in memory - editing one will not update the other!
 
@@ -749,7 +902,7 @@ order. For example, you can sort the sequences by increasing GC content:
 
    >>> from Bio.SeqUtils import gc_fraction
    >>> alignment.sort(key=gc_fraction)
-   >>> print(alignment)  # CHEEMPIE
+   >>> print(alignment)
                      0 AG-TTT-- 5
                      0 AGGTTT-- 6
                      1 CGGTTTTT 9
@@ -962,9 +1115,9 @@ argument, to find the alignment of the RNA-sequence to the genome:
                      0 ||||-----------|||| 19
    query             0 CCCC-----------GGGG  8
    <BLANKLINE>
-   >>> alignment3.coordinates
-   array([[11, 15, 26, 30],
-          [ 0,  4,  4,  8]])
+   >>> print(alignment3.coordinates)
+   [[11 15 26 30]
+    [ 0  4  4  8]]
    >>> format(alignment3, "psl")
    '8\t0\t0\t0\t0\t0\t1\t11\t+\tquery\t8\t0\t8\ttarget\t40\t11\t30\t2\t4,4,\t0,4,\t11,26,\n'
 
@@ -995,7 +1148,7 @@ transcript against one of the genome assemblies:
    224244399
    >>> import numpy as np
    >>> np.set_printoptions(threshold=5)  # print 5 array elements per row
-   >>> print(chain.coordinates)  # doctest:+ELLIPSIS
+   >>> print(chain.coordinates)
    [[122250000 122250400 122250400 ... 122909818 122909819 122909835]
     [111776384 111776784 111776785 ... 112019962 112019962 112019978]]
 
@@ -1051,7 +1204,7 @@ We swap the target and query of the chain such that the query of
    'chr1'
    >>> len(chain.sequences[1].seq)
    228573443
-   >>> print(chain.coordinates)  # doctest:+ELLIPSIS
+   >>> print(chain.coordinates)
    [[111776384 111776784 111776785 ... 112019962 112019962 112019978]
     [122250000 122250400 122250400 ... 122909818 122909819 122909835]]
    >>> np.set_printoptions(threshold=1000)  # reset the print options
@@ -1105,19 +1258,19 @@ macaque, marmoset, mouse, and rat:
    calJac3.chr18 47448759
    mm10.chr3 160039680
    rn6.chr2 266435125
-   >>> genome_alignment.coordinates
-   array([[133922962, 133922962, 133922970, 133922970, 133922972, 133922972,
-           133922995, 133922998, 133923010],
-          [155784573, 155784573, 155784581, 155784581, 155784583, 155784583,
-           155784606, 155784609, 155784621],
-          [130383910, 130383910, 130383918, 130383918, 130383920, 130383920,
-           130383943, 130383946, 130383958],
-          [  9790455,   9790455,   9790463,   9790463,   9790465,   9790465,
-             9790488,   9790491,   9790503],
-          [ 88858039,  88858036,  88858028,  88858026,  88858024,  88858020,
-            88857997,  88857997,  88857985],
-          [188162970, 188162967, 188162959, 188162959, 188162957, 188162953,
-           188162930, 188162930, 188162918]])
+   >>> print(genome_alignment.coordinates)
+   [[133922962 133922962 133922970 133922970 133922972 133922972 133922995
+     133922998 133923010]
+    [155784573 155784573 155784581 155784581 155784583 155784583 155784606
+     155784609 155784621]
+    [130383910 130383910 130383918 130383918 130383920 130383920 130383943
+     130383946 130383958]
+    [  9790455   9790455   9790463   9790463   9790465   9790465   9790488
+       9790491   9790503]
+    [ 88858039  88858036  88858028  88858026  88858024  88858020  88857997
+      88857997  88857985]
+    [188162970 188162967 188162959 188162959 188162957 188162953 188162930
+     188162930 188162918]]
    >>> print(genome_alignment)
    panTro5.c 133922962 ---ACTAGTTA--CA----GTAACAGAAAATAAAATTTAAATAGAAACTTAAAggcc
    hg19.chr1 155784573 ---ACTAGTTA--CA----GTAACAGAAAATAAAATTTAAATAGAAACTTAAAggcc
@@ -1198,19 +1351,19 @@ sequence alignment to the new genome assembly versions:
    chr18 47031477
    chr3 159745316
    chr2 249053267
-   >>> genome_alignment.coordinates
-   array([[130611000, 130611000, 130611008, 130611008, 130611010, 130611010,
-           130611033, 130611036, 130611048],
-          [155814782, 155814782, 155814790, 155814790, 155814792, 155814792,
-           155814815, 155814818, 155814830],
-          [ 95186253,  95186253,  95186245,  95186245,  95186243,  95186243,
-            95186220,  95186217,  95186205],
-          [  9758318,   9758318,   9758326,   9758326,   9758328,   9758328,
-             9758351,   9758354,   9758366],
-          [ 88765346,  88765343,  88765335,  88765333,  88765331,  88765327,
-            88765304,  88765304,  88765292],
-          [174256702, 174256699, 174256691, 174256691, 174256689, 174256685,
-           174256662, 174256662, 174256650]])
+   >>> print(genome_alignment.coordinates)
+   [[130611000 130611000 130611008 130611008 130611010 130611010 130611033
+     130611036 130611048]
+    [155814782 155814782 155814790 155814790 155814792 155814792 155814815
+     155814818 155814830]
+    [ 95186253  95186253  95186245  95186245  95186243  95186243  95186220
+      95186217  95186205]
+    [  9758318   9758318   9758326   9758326   9758328   9758328   9758351
+       9758354   9758366]
+    [ 88765346  88765343  88765335  88765333  88765331  88765327  88765304
+      88765304  88765292]
+    [174256702 174256699 174256691 174256691 174256689 174256685 174256662
+     174256662 174256650]]
 
 As the ``.chain`` files do not include the sequence contents, we cannot
 print the sequence alignment directly. Instead, we read in the genomic
@@ -1650,101 +1803,100 @@ formats can also be written by ``Bio.Align``, as shown in the table.
 
 .. container:: center
 
-   +-------------+-------------+-------------+-------------+-------------+
-   | File format | Description | text /      | Supported   | Subsection  |
-   | ``fmt``     |             | binary      | by          |             |
-   |             |             |             | ``write``   |             |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``a2m``     | A2M         | text        | yes         | `1.7.11     |
-   |             |             |             |             | <#subsec:al |
-   |             |             |             |             | ign_a2m>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``bed``     | Browser     | text        | yes         | `1.7.14     |
-   |             | Extensible  |             |             | <#subsec:al |
-   |             | Data (BED)  |             |             | ign_bed>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``bigbed``  | bigBed      | binary      | yes         | `1.7.15 <#s |
-   |             |             |             |             | ubsec:align |
-   |             |             |             |             | _bigbed>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``bigmaf``  | bigMaf      | binary      | yes         | `1.7.19 <#s |
-   |             |             |             |             | ubsec:align |
-   |             |             |             |             | _bigmaf>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``bigpsl``  | bigPsl      | binary      | yes         | `1.7.17 <#s |
-   |             |             |             |             | ubsec:align |
-   |             |             |             |             | _bigpsl>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``chain``   | UCSC chain  | text        | yes         | `1.7.20 <#  |
-   |             | file        |             |             | subsec:alig |
-   |             |             |             |             | n_chain>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``clustal`` | ClustalW    | text        | yes         | `1.7.2 <#su |
-   |             |             |             |             | bsec:align_ |
-   |             |             |             |             | clustal>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``emboss``  | EMBOSS      | text        | no          | `1.7.5 <#s  |
-   |             |             |             |             | ubsec:align |
-   |             |             |             |             | _emboss>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``          | Exonerate   | text        | yes         | `1          |
-   | exonerate`` |             |             |             | .7.7 <#subs |
-   |             |             |             |             | ec:align_ex |
-   |             |             |             |             | onerate>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``fasta``   | Aligned     | text        | yes         | `1.7.1 <#   |
-   |             | FASTA       |             |             | subsec:alig |
-   |             |             |             |             | n_fasta>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``hhr``     | HH-suite    | text        | no          | `1.7.10     |
-   |             | output      |             |             | <#subsec:al |
-   |             | files       |             |             | ign_hhr>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``maf``     | Multiple    | text        | yes         | `1.7.18     |
-   |             | Alignment   |             |             | <#subsec:al |
-   |             | Format      |             |             | ign_maf>`__ |
-   |             | (MAF)       |             |             |             |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``mauve``   | Mauve       | text        | yes         | `1.7.12 <#  |
-   |             | eXtended    |             |             | subsec:alig |
-   |             | Multi-FastA |             |             | n_mauve>`__ |
-   |             | (xmfa)      |             |             |             |
-   |             | format      |             |             |             |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``msf``     | GCG         | text        | no          | `1.7.6      |
-   |             | Multiple    |             |             | <#subsec:al |
-   |             | Sequence    |             |             | ign_msf>`__ |
-   |             | Format      |             |             |             |
-   |             | (MSF)       |             |             |             |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``nexus``   | NEXUS       | text        | yes         | `1.7.8 <#   |
-   |             |             |             |             | subsec:alig |
-   |             |             |             |             | n_nexus>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``phylip``  | PHYLIP      | text        | yes         | `1.7.4 <#s  |
-   |             | output      |             |             | ubsec:align |
-   |             | files       |             |             | _phylip>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``psl``     | Pattern     | text        | yes         | `1.7.16     |
-   |             | Space       |             |             | <#subsec:al |
-   |             | Layout      |             |             | ign_psl>`__ |
-   |             | (PSL)       |             |             |             |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``sam``     | Sequence    | text        | yes         | `1.7.13     |
-   |             | Al          |             |             | <#subsec:al |
-   |             | ignment/Map |             |             | ign_sam>`__ |
-   |             | (SAM)       |             |             |             |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``          | Stockholm   | text        | yes         | `1          |
-   | stockholm`` |             |             |             | .7.3 <#subs |
-   |             |             |             |             | ec:align_st |
-   |             |             |             |             | ockholm>`__ |
-   +-------------+-------------+-------------+-------------+-------------+
-   | ``tabular`` | Tabular     | text        | no          | `1.7.9 <#su |
-   |             | output from |             |             | bsec:align_ |
-   |             | BLAST or    |             |             | tabular>`__ |
-   |             | FASTA       |             |             |             |
-   +-------------+-------------+-------------+-------------+-------------+
+   +---------------+-------------+-------------+-------------+-------------+
+   | File format   | Description | text /      | Supported   | Subsection  |
+   | ``fmt``       |             | binary      | by          |             |
+   |               |             |             | ``write``   |             |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``a2m``       | A2M         | text        | yes         | `1.7.11     |
+   |               |             |             |             | <#subsec:al |
+   |               |             |             |             | ign_a2m>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``bed``       | Browser     | text        | yes         | `1.7.14     |
+   |               | Extensible  |             |             | <#subsec:al |
+   |               | Data (BED)  |             |             | ign_bed>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``bigbed``    | bigBed      | binary      | yes         | `1.7.15 <#s |
+   |               |             |             |             | ubsec:align |
+   |               |             |             |             | _bigbed>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``bigmaf``    | bigMaf      | binary      | yes         | `1.7.19 <#s |
+   |               |             |             |             | ubsec:align |
+   |               |             |             |             | _bigmaf>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``bigpsl``    | bigPsl      | binary      | yes         | `1.7.17 <#s |
+   |               |             |             |             | ubsec:align |
+   |               |             |             |             | _bigpsl>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``chain``     | UCSC chain  | text        | yes         | `1.7.20 <#  |
+   |               | file        |             |             | subsec:alig |
+   |               |             |             |             | n_chain>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``clustal``   | ClustalW    | text        | yes         | `1.7.2 <#su |
+   |               |             |             |             | bsec:align_ |
+   |               |             |             |             | clustal>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``emboss``    | EMBOSS      | text        | no          | `1.7.5 <#s  |
+   |               |             |             |             | ubsec:align |
+   |               |             |             |             | _emboss>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``exonerate`` | Exonerate   | text        | yes         | `1          |
+   |               |             |             |             | .7.7 <#subs |
+   |               |             |             |             | ec:align_ex |
+   |               |             |             |             | onerate>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``fasta``     | Aligned     | text        | yes         | `1.7.1 <#   |
+   |               | FASTA       |             |             | subsec:alig |
+   |               |             |             |             | n_fasta>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``hhr``       | HH-suite    | text        | no          | `1.7.10     |
+   |               | output      |             |             | <#subsec:al |
+   |               | files       |             |             | ign_hhr>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``maf``       | Multiple    | text        | yes         | `1.7.18     |
+   |               | Alignment   |             |             | <#subsec:al |
+   |               | Format      |             |             | ign_maf>`__ |
+   |               | (MAF)       |             |             |             |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``mauve``     | Mauve       | text        | yes         | `1.7.12 <#  |
+   |               | eXtended    |             |             | subsec:alig |
+   |               | Multi-FastA |             |             | n_mauve>`__ |
+   |               | (xmfa)      |             |             |             |
+   |               | format      |             |             |             |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``msf``       | GCG         | text        | no          | `1.7.6      |
+   |               | Multiple    |             |             | <#subsec:al |
+   |               | Sequence    |             |             | ign_msf>`__ |
+   |               | Format      |             |             |             |
+   |               | (MSF)       |             |             |             |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``nexus``     | NEXUS       | text        | yes         | `1.7.8 <#   |
+   |               |             |             |             | subsec:alig |
+   |               |             |             |             | n_nexus>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``phylip``    | PHYLIP      | text        | yes         | `1.7.4 <#s  |
+   |               | output      |             |             | ubsec:align |
+   |               | files       |             |             | _phylip>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``psl``       | Pattern     | text        | yes         | `1.7.16     |
+   |               | Space       |             |             | <#subsec:al |
+   |               | Layout      |             |             | ign_psl>`__ |
+   |               | (PSL)       |             |             |             |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``sam``       | Sequence    | text        | yes         | `1.7.13     |
+   |               | Alignment/  |             |             | <#subsec:al |
+   |               | Map (SAM)   |             |             | ign_sam>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``stockholm`` | Stockholm   | text        | yes         | `1          |
+   |               |             |             |             | .7.3 <#subs |
+   |               |             |             |             | ec:align_st |
+   |               |             |             |             | ockholm>`__ |
+   +---------------+-------------+-------------+-------------+-------------+
+   | ``tabular``   | Tabular     | text        | no          | `1.7.9 <#su |
+   |               | output from |             |             | bsec:align_ |
+   |               | BLAST or    |             |             | tabular>`__ |
+   |               | FASTA       |             |             |             |
+   +---------------+-------------+-------------+-------------+-------------+
 
 .. _`subsec:align_fasta`:
 
@@ -1872,12 +2024,12 @@ instead:
 
 .. code:: pycon
 
-   >>> alignment.coordinates
-   array([[ 0,  1,  1, 33, 34, 42, 44, 48, 48, 50, 50, 51, 58, 73, 73, 95],
-          [ 0,  0,  0, 32, 33, 41, 43, 47, 47, 49, 49, 50, 57, 72, 72, 94],
-          [ 0,  0,  0, 32, 33, 41, 43, 47, 48, 50, 51, 52, 59, 74, 77, 99],
-          [ 0,  1,  2, 34, 35, 43, 43, 47, 47, 49, 49, 50, 57, 72, 72, 94],
-          [ 0,  1,  2, 34, 34, 42, 44, 48, 48, 50, 50, 51, 51, 66, 66, 88]])
+   >>> print(alignment.coordinates)
+   [[ 0  1  1 33 34 42 44 48 48 50 50 51 58 73 73 95]
+    [ 0  0  0 32 33 41 43 47 47 49 49 50 57 72 72 94]
+    [ 0  0  0 32 33 41 43 47 48 50 51 52 59 74 77 99]
+    [ 0  1  2 34 35 43 43 47 47 49 49 50 57 72 72 94]
+    [ 0  1  2 34 34 42 44 48 48 50 50 51 51 66 66 88]]
 
 Use ``Align.write`` to write this alignment to a file (here, we’ll use a
 ``StringIO`` object instead of a file):
@@ -2526,9 +2678,9 @@ To pull out the alignment, we use
                    120 ||||||||||| 131
    IXI_235         101 PPAWAGDRSHE 112
    <BLANKLINE>
-   >>> alignment.coordinates
-   array([[  0,  15,  24,  74,  84, 131],
-          [  0,  15,  15,  65,  65, 112]])
+   >>> print(alignment.coordinates)
+   [[  0  15  24  74  84 131]
+    [  0  15  15  65  65 112]]
 
 We can use indices to extract specific parts of the alignment:
 
@@ -2560,11 +2712,22 @@ calling the ``counts`` method on the ``alignment`` object:
 
 .. code:: pycon
 
-   >>> alignment.counts()
-   AlignmentCounts(gaps=19, identities=112, mismatches=0)
+   >>> counts = alignment.counts()
 
-where ``AlignmentCounts`` is a ``namedtuple`` in the ``collections``
-module in Python’s standard library.
+where the ``counts`` variable is an ``AlignmentCounts`` object collecting
+information on the number of gaps, matches, and mismatches in the alignment
+library (see :ref:`paragraph:alignment_counts`)):
+
+.. cont-doctest
+
+.. code:: pycon
+
+   >>> counts.identities
+   112
+   >>> counts.mismatches
+   0
+   >>> counts.gaps
+   19
 
 The consensus line shown between the two sequences is stored in the
 ``column_annotations`` attribute:
@@ -2729,18 +2892,18 @@ attribute:
 
 .. code:: pycon
 
-   >>> alignment.coordinates
-   array([[ 0, 93, 99],
-          [ 0, 93, 99],
-          [ 0, 93, 99],
-          [ 0, 93, 99],
-          [ 0, 93, 99],
-          [ 0, 93, 99],
-          [ 0, 93, 93],
-          [ 0, 93, 93],
-          [ 0, 93, 93],
-          [ 0, 93, 93],
-          [ 0, 93, 99]])
+   >>> print(alignment.coordinates)
+   [[ 0 93 99]
+    [ 0 93 99]
+    [ 0 93 99]
+    [ 0 93 99]
+    [ 0 93 99]
+    [ 0 93 99]
+    [ 0 93 93]
+    [ 0 93 93]
+    [ 0 93 93]
+    [ 0 93 93]
+    [ 0 93 99]]
 
 Currently, Biopython does not support writing sequence alignments in the
 MSF format.
@@ -2804,9 +2967,9 @@ alignment score 6146.0, has no gaps:
    >>> alignment = next(alignments)
    >>> alignment.score
    6146.0
-   >>> alignment.coordinates
-   array([[1319275, 1319274, 1319271, 1318045],
-          [      0,       1,       4,    1230]])
+   >>> print(alignment.coordinates)
+   [[1319275 1319274 1319271 1318045]
+    [      0       1       4    1230]]
    >>> print(alignment)  # doctest: +ELLIPSIS
    gi|330443   1319275 ????????????????????????????????????????????????????????????
                      0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -3118,9 +3281,9 @@ example, let’s go to the fourth alignment:
                    120 ||||||-|||||||| 135
    pGT875          274 ??????????????? 289
    <BLANKLINE>
-   >>> alignment.coordinates  # doctest: +NORMALIZE_WHITESPACE
-   array([[156, 171, 173, 190, 190, 201, 202, 260, 261, 272, 272, 279, 279, 287],
-          [158, 173, 173, 190, 192, 203, 203, 261, 261, 272, 273, 280, 281, 289]])
+   >>> print(alignment.coordinates)
+   [[156 171 173 190 190 201 202 260 261 272 272 279 279 287]
+    [158 173 173 190 192 203 203 261 261 272 273 280 281 289]]
    >>> alignment.aligned
    array([[[156, 171],
            [173, 190],
@@ -4151,9 +4314,9 @@ example:
    >>> print(format(alignment, "SAM"))  # doctest: +NORMALIZE_WHITESPACE
    NR_111921.1 0   chr3    48663768    0   46M1827N82M3376N76M12H  *   0   0   CACGAGAGGAGCGGAGGCGAGGGGTGAACGCGGAGCACTCCAATCGCTCCCAACTAGAGGTCCACCCAGGACCCAGAGACCTGGATTTGAGGCTGCTGGGCGGCAGATGGAGCGATCAGAAGACCAGGAGACGGGAGCTGGAGTGCAGTGGCTGTTCACAAGCGTGAAAGCAAAGATTAAAAAATTTGTTTTTATATTAAAAAA    *   AS:i:1000   NM:i:0
    <BLANKLINE>
-   >>> alignment.coordinates
-   array([[48663767, 48663813, 48665640, 48665722, 48669098, 48669174],
-          [       0,       46,       46,      128,      128,      204]])
+   >>> print(alignment.coordinates)
+   [[48663767 48663813 48665640 48665722 48669098 48669174]
+    [       0       46       46      128      128      204]]
    >>> alignment.operations
    bytearray(b'MNMNM')
    >>> alignment.query.annotations["hard_clip_right"]
@@ -4559,6 +4722,12 @@ dictionary. Please refer to the test script ``test_Align_bigbed.py`` in
 the ``Tests`` subdirectory in the Biopython distribution for more
 examples of writing alignment files in the bigBed format.
 
+Optional arguments are ``compress`` (default value is ``True``), ``blockSize``
+(default value is 256), and ``itemsPerSlot`` (default value is 512). See the
+documentation of UCSC's ``bedToBigBed`` program for a description of these
+arguments.  Searching a ``bigBed`` file can be faster by using
+``compress=False`` and ``itemsPerSlot=1`` when creating the bigBed file.
+
 .. _`subsec:align_psl`:
 
 Pattern Space Layout (PSL)
@@ -4683,11 +4852,11 @@ matches to any unknown nucleotides separately.
 
 .. code:: pycon
 
-   >>> import numpy
+   >>> import numpy as np
    >>> from Bio import Align
    >>> query = "GGTGGGGG"
    >>> target = "AAAAAAAggggGGNGAAAAA"
-   >>> coordinates = numpy.array([[0, 7, 15, 20], [0, 0, 8, 8]])
+   >>> coordinates = np.array([[0, 7, 15, 20], [0, 0, 8, 8]])
    >>> alignment = Align.Alignment([target, query], coordinates)
    >>> print(alignment)
    target            0 AAAAAAAggggGGNGAAAAA 20
@@ -4920,6 +5089,12 @@ See section :ref:`subsec:align_psl` for an explanation on how the
 number of matches, mismatches, repeat region matches, and matches to
 unknown nucleotides are obtained.
 
+Further optional arguments are ``blockSize`` (default value is 256), and
+``itemsPerSlot`` (default value is 512). See the documentation of UCSC's
+``bedToBigBed`` program for a description of these arguments.  Searching a
+``bigPsl`` file can be faster by using ``compress=False`` and
+``itemsPerSlot=1`` when creating the bigPsl file.
+
 .. _`subsec:align_maf`:
 
 Multiple Alignment Format (MAF)
@@ -5007,12 +5182,12 @@ for each alignment block in the MAF file:
     'baboon': 4622798,
     'mm4.chr6': 151104725,
     'rn3.chr4': 187371129}
-   >>> alignment.coordinates  # doctest: +NORMALIZE_WHITESPACE
-   array([[27578828, 27578829, 27578831, 27578831, 27578850, 27578850, 27578866],
-          [28741140, 28741141, 28741143, 28741143, 28741162, 28741162, 28741178],
-          [  116834,   116835,   116837,   116837,   116856,   116856, 116872],
-          [53215344, 53215344, 53215346, 53215347, 53215366, 53215366, 53215382],
-          [81344243, 81344243, 81344245, 81344245, 81344264, 81344267, 81344283]])
+   >>> print(alignment.coordinates)
+   [[27578828 27578829 27578831 27578831 27578850 27578850 27578866]
+    [28741140 28741141 28741143 28741143 28741162 28741162 28741178]
+    [  116834   116835   116837   116837   116856   116856   116872]
+    [53215344 53215344 53215346 53215347 53215366 53215366 53215382]
+    [81344243 81344243 81344245 81344245 81344264 81344267 81344283]]
    >>> print(alignment)
    hg16.chr7  27578828 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG 27578866
    panTro1.c  28741140 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG 28741178
@@ -5176,8 +5351,8 @@ bigMaf
 
 A bigMaf file is a bigBed file with a BED3+1 format consisting of the 3
 required BED fields plus a custom field that stores a MAF alignment
-block as a string, crearing an indexed binary version of a MAF file (see
-section :ref:`subsec:align_bigmaf`). The associated AutoSql file
+block as a string, creating an indexed binary version of a MAF file (see
+section :ref:`subsec:align_maf`). The associated AutoSql file
 `bigMaf.as <https://genome.ucsc.edu/goldenPath/help/examples/bigMaf.as>`__
 is provided by UCSC. To create a bigMaf file, you can either use the
 ``mafToBigMaf`` and ``bedToBigBed`` programs from UCSC. or you can use
@@ -5245,12 +5420,12 @@ for each alignment block in the bigMaf file:
     'baboon': 4622798,
     'mm4.chr6': 151104725,
     'rn3.chr4': 187371129}
-   >>> alignment.coordinates  # doctest: +NORMALIZE_WHITESPACE
-   array([[27578828, 27578829, 27578831, 27578831, 27578850, 27578850, 27578866],
-          [28741140, 28741141, 28741143, 28741143, 28741162, 28741162, 28741178],
-          [  116834,   116835,   116837,   116837,   116856,   116856, 116872],
-          [53215344, 53215344, 53215346, 53215347, 53215366, 53215366, 53215382],
-          [81344243, 81344243, 81344245, 81344245, 81344264, 81344267, 81344283]])
+   >>> print(alignment.coordinates)
+   [[27578828 27578829 27578831 27578831 27578850 27578850 27578866]
+    [28741140 28741141 28741143 28741143 28741162 28741162 28741178]
+    [  116834   116835   116837   116837   116856   116856   116872]
+    [53215344 53215344 53215346 53215347 53215366 53215366 53215382]
+    [81344243 81344243 81344245 81344245 81344264 81344267 81344283]]
    >>> print(alignment)
    hg16.chr7  27578828 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG 27578866
    panTro1.c  28741140 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG 28741178
@@ -5335,6 +5510,9 @@ be of the form ``reference.chromosome``, where ``reference`` refers to
 the reference species. ``Bio.Align.write`` has the additional keyword
 argument ``compress`` (``True`` by default) specifying whether the data
 should be compressed using zlib.
+Further optional arguments are ``blockSize`` (default value is 256), and
+``itemsPerSlot`` (default value is 512). See the documentation of UCSC's
+``bedToBigBed`` program for a description of these arguments.
 
 As a bigMaf file is a special case of a bigBed file, you can use the
 ``search`` method on the ``alignments`` object to find alignments to
@@ -5364,6 +5542,9 @@ start and end positions may be ``None`` to start searching from position
 0 or to continue searching until the end of the chromosome,
 respectively. Note that we can search on genomic position for the
 reference species only.
+
+Searching a ``bigMaf`` file can be faster by using ``compress=False`` and
+``itemsPerSlot=1`` when creating the bigMaf file.
 
 .. _`subsec:align_chain`:
 

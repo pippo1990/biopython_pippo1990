@@ -32,7 +32,8 @@ class GenericPositionMatrix(dict):
                 self.length = len(values[letter])
             elif self.length != len(values[letter]):
                 raise Exception("data has inconsistent lengths")
-            self[letter] = list(values[letter])
+            # Cast any numpy floats into Python floats:
+            self[letter] = [float(_) for _ in values[letter]]
         self.alphabet = alphabet
 
     def __str__(self):
@@ -173,17 +174,25 @@ class GenericPositionMatrix(dict):
             "C": "C",
             "G": "G",
             "T": "T",
+            "U": "U",
             "AC": "M",
             "AG": "R",
             "AT": "W",
+            "AU": "W",
             "CG": "S",
             "CT": "Y",
+            "CU": "Y",
             "GT": "K",
+            "GU": "K",
             "ACG": "V",
             "ACT": "H",
+            "ACU": "H",
             "AGT": "D",
+            "AGU": "D",
             "CGT": "B",
+            "CGU": "B",
             "ACGT": "N",
+            "ACGU": "N",
         }
         sequence = ""
         for i in range(self.length):

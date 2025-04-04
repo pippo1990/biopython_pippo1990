@@ -19,13 +19,15 @@ a database object.
 """
 
 # standard modules
-from time import gmtime, strftime
+from time import gmtime
+from time import strftime
 
-# biopython
-from Bio.SeqUtils.CheckSum import crc64
 from Bio import Entrez
 from Bio.Seq import UndefinedSequenceError
 from Bio.SeqFeature import UnknownPosition
+
+# biopython
+from Bio.SeqUtils.CheckSum import crc64
 
 
 class DatabaseLoader:
@@ -546,7 +548,7 @@ class DatabaseLoader:
             # we could verify that the Scientific Name etc in the database
             # is the same and update it or print a warning if not...
             if len(rows) != 1:
-                raise ValueError(f"Expected 1 reponse, got {len(rows)}")
+                raise ValueError(f"Expected 1 response, got {len(rows)}")
             return rows[0]
 
         # We have to record this.
@@ -938,6 +940,7 @@ class DatabaseLoader:
                 # e.g. order locations... we don't record "order" so it
                 # will become a "join" on reloading. What does BioPerl do?
                 import warnings
+
                 from Bio import BiopythonWarning
 
                 warnings.warn(

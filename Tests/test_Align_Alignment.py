@@ -18,8 +18,11 @@ except ImportError:
         "Install numpy if you want to use Bio.Align."
     ) from None
 
-from Bio import Align, SeqIO
-from Bio.Seq import Seq, reverse_complement, translate
+from Bio import Align
+from Bio import SeqIO
+from Bio.Seq import reverse_complement
+from Bio.Seq import Seq
+from Bio.Seq import translate
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqUtils import gc_fraction
 
@@ -2362,6 +2365,29 @@ T    6.0  14.0   0.0 874.0
         )
         self.assertAlmostEqual(m["C", "T"], 14.0)
         self.assertAlmostEqual(m["T", "C"], 14.0)
+
+    def test_counts(self):
+        from Bio.Align import substitution_matrices
+
+        substitution_matrix = substitution_matrices.load("BLOSUM62")
+        alignment = self.alignment
+        counts = alignment.counts()
+        self.assertEqual(
+            str(counts),
+            "AlignmentCounts(left_insertions=0, left_deletions=0, internal_insertions=0, internal_deletions=0, right_insertions=80, right_deletions=4, aligned=3084, identities=3020, mismatches=64, positives=None)",
+        )
+        counts = alignment.counts(ignore_sequences=True)
+        self.assertEqual(
+            str(counts),
+            "AlignmentCounts(left_insertions=0, left_deletions=0, internal_insertions=0, internal_deletions=0, right_insertions=80, right_deletions=4, aligned=3084, identities=None, mismatches=None, positives=None)",
+        )
+        with self.assertRaises(ValueError):
+            alignment.counts(
+                substitution_matrix=substitution_matrix, ignore_sequences=True
+            )
+        for i, sequence in enumerate(alignment.sequences):
+            length = len(sequence)
+            alignment.sequences[i] = Seq(None, length)
 
     def test_add(self):
         self.assertEqual(

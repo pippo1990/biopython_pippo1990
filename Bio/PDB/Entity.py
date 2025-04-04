@@ -10,10 +10,14 @@ It is a simple container class, with list and dictionary like properties.
 """
 
 import warnings
-
 from collections import deque
 from copy import copy
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar, Union
+from typing import Any
+from typing import Generic
+from typing import Optional
+from typing import TYPE_CHECKING
+from typing import TypeVar
+from typing import Union
 
 import numpy as np
 
@@ -35,9 +39,9 @@ class Entity(Generic[_Parent, _Child]):
     It deals with storage and lookup.
     """
 
-    parent: Optional[_Parent]
-    child_list: List[_Child]
-    child_dict: Dict[Any, _Child]
+    parent: _Parent | None
+    child_list: list[_Child]
+    child_dict: dict[Any, _Child]
     level: str
 
     def __init__(self, id):
